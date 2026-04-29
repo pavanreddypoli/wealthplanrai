@@ -19,7 +19,7 @@ export function ScoreRing({ score, color }: { score: number; color: string }) {
         {/* Track */}
         <circle
           cx="60" cy="60" r={RADIUS}
-          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9"
+          fill="none" stroke="rgba(37,99,235,0.12)" strokeWidth="9"
         />
         {/* Filled arc */}
         <circle
@@ -31,8 +31,8 @@ export function ScoreRing({ score, color }: { score: number; color: string }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-6xl font-bold text-white leading-none">{score}</span>
-        <span className="text-xs text-slate-400 mt-2 font-medium tracking-wide">out of 100</span>
+        <span className="text-6xl font-bold text-gray-900 leading-none">{score}</span>
+        <span className="text-xs text-gray-500 mt-2 font-medium tracking-wide">out of 100</span>
       </div>
     </div>
   )

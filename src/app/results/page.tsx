@@ -30,36 +30,36 @@ const SUB_META: Record<string, { label: string; icon: string; explanation: strin
 }
 
 const RISK_BADGE: Record<string, string> = {
-  conservative:    'bg-blue-900/50 text-blue-300 border border-blue-700/50',
-  moderate:        'bg-amber-900/50 text-amber-300 border border-amber-700/50',
-  aggressive:      'bg-orange-900/50 text-orange-300 border border-orange-700/50',
-  very_aggressive: 'bg-rose-900/50 text-rose-300 border border-rose-700/50',
+  conservative:    'bg-blue-100 text-blue-700 border border-blue-200',
+  moderate:        'bg-amber-100 text-amber-700 border border-amber-200',
+  aggressive:      'bg-orange-100 text-orange-700 border border-orange-200',
+  very_aggressive: 'bg-red-100 text-red-700 border border-red-200',
 }
 
 const PRIORITY_CONFIG = {
-  high:   { label: 'High',   badge: 'bg-rose-100 text-rose-700',   header: 'bg-rose-50 border-rose-200',  border: 'border-rose-200' },
-  medium: { label: 'Medium', badge: 'bg-amber-100 text-amber-700',  header: 'bg-amber-50 border-amber-200', border: 'border-amber-200' },
-  low:    { label: 'Low',    badge: 'bg-slate-100 text-slate-600',  header: 'bg-slate-50 border-slate-200', border: 'border-slate-200' },
+  high:   { label: 'High',   badge: 'bg-red-100 text-red-700',    header: 'bg-red-50 border-red-200',    border: 'border-red-200' },
+  medium: { label: 'Medium', badge: 'bg-amber-100 text-amber-700', header: 'bg-amber-50 border-amber-200', border: 'border-amber-200' },
+  low:    { label: 'Low',    badge: 'bg-slate-100 text-slate-600', header: 'bg-slate-50 border-slate-200', border: 'border-slate-200' },
 } as const
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
 
 function scoreColor(s: number): string {
-  return s >= 75 ? '#10b981' : s >= 50 ? '#f59e0b' : '#f43f5e'
+  return s >= 75 ? '#2563eb' : s >= 50 ? '#f59e0b' : '#ef4444'
 }
 
 function scoreLabel(s: number): { text: string; cls: string } {
-  if (s >= 75) return { text: 'Excellent',  cls: 'text-emerald-600' }
+  if (s >= 75) return { text: 'Excellent',  cls: 'text-blue-600' }
   if (s >= 50) return { text: 'Good',       cls: 'text-amber-600' }
   if (s >= 25) return { text: 'Needs Work', cls: 'text-orange-600' }
-  return             { text: 'Critical',    cls: 'text-rose-600' }
+  return             { text: 'Critical',    cls: 'text-red-600' }
 }
 
 function scoreBarColor(s: number): string {
-  if (s >= 75) return 'bg-emerald-500'
+  if (s >= 75) return 'bg-blue-500'
   if (s >= 50) return 'bg-amber-400'
   if (s >= 25) return 'bg-orange-400'
-  return 'bg-rose-500'
+  return 'bg-red-500'
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ function PriorityBadge({ priority }: { priority: 'high' | 'medium' | 'low' }) {
 function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center py-32 gap-4">
-      <svg className="w-10 h-10 animate-spin text-slate-300" viewBox="0 0 24 24" fill="none">
+      <svg className="w-10 h-10 animate-spin text-brand-300" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
       </svg>
@@ -145,16 +145,16 @@ async function ResultsContent({ id }: { id: string }) {
   if (error || !data) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center">
-          <AlertTriangle className="w-7 h-7 text-rose-400" />
+        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+          <AlertTriangle className="w-7 h-7 text-red-400" />
         </div>
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-1">Assessment not found</h2>
-          <p className="text-sm text-gray-500">We couldn't locate this assessment. It may have expired or the link is invalid.</p>
+          <p className="text-sm text-gray-500">We couldn&apos;t locate this assessment. It may have expired or the link is invalid.</p>
         </div>
         <Link
           href="/assessment"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
         >
           Retake assessment <ArrowRight className="w-4 h-4" />
         </Link>
@@ -167,7 +167,7 @@ async function ResultsContent({ id }: { id: string }) {
   const overall = sr?.overall_score ?? row.score
   const ring    = scoreColor(overall)
   const riskLabel = RISK_LABELS[row.risk_profile as RiskProfile] ?? row.risk_profile
-  const badgeCls  = RISK_BADGE[row.risk_profile] ?? 'bg-slate-700 text-slate-300 border border-slate-600'
+  const badgeCls  = RISK_BADGE[row.risk_profile] ?? 'bg-gray-100 text-gray-600 border border-gray-200'
   const dateStr   = formatDate(row.created_at)
 
   // Top-3 lowest sub-scores
@@ -185,19 +185,19 @@ async function ResultsContent({ id }: { id: string }) {
     <div className="space-y-6">
 
       {/* ── Section 1: Hero score card ───────────────────────────────── */}
-      <div className="bg-slate-900 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 border border-blue-200">
 
         {/* Name + date */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
-              <User className="w-4 h-4 text-slate-400" />
+            <div className="w-8 h-8 rounded-full bg-white/70 border border-blue-200 flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-500" />
             </div>
-            <span className="text-base font-semibold text-white">
+            <span className="text-base font-semibold text-gray-900">
               {row.full_name ?? 'Your Assessment'}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+          <div className="flex items-center gap-1.5 text-gray-500 text-xs">
             <Calendar className="w-3.5 h-3.5" />
             <span>{dateStr}</span>
           </div>
@@ -208,11 +208,11 @@ async function ResultsContent({ id }: { id: string }) {
 
         {/* Labels */}
         <div className="mt-6 flex flex-col items-center gap-3">
-          <p className="text-sm font-medium text-slate-400 tracking-wide">Financial Health Score</p>
+          <p className="text-sm font-medium text-gray-600 tracking-wide">Financial Health Score</p>
           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeCls}`}>
             {riskLabel}
           </span>
-          <p className="text-xs text-slate-500 text-center max-w-xs">
+          <p className="text-xs text-gray-500 text-center max-w-xs">
             Based on your complete financial assessment
           </p>
         </div>
@@ -238,14 +238,14 @@ async function ResultsContent({ id }: { id: string }) {
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 px-1">
             Areas needing attention
           </h2>
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden shadow-sm">
             {sr.risk_flags.map((flag, i) => (
               <div
                 key={i}
-                className={`flex items-start gap-3 px-5 py-3.5 ${i < sr.risk_flags.length - 1 ? 'border-b border-rose-100' : ''}`}
+                className={`flex items-start gap-3 px-5 py-3.5 ${i < sr.risk_flags.length - 1 ? 'border-b border-amber-100' : ''}`}
               >
-                <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-rose-800 leading-snug">{flag}</p>
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-amber-900 leading-snug">{flag}</p>
               </div>
             ))}
           </div>
@@ -305,18 +305,18 @@ async function ResultsContent({ id }: { id: string }) {
       )}
 
       {/* ── Section 6: CTA ──────────────────────────────────────────── */}
-      <section className="bg-slate-900 rounded-2xl p-8 text-center">
+      <section className="bg-brand-600 rounded-2xl p-8 text-center">
         <h2 className="text-2xl font-bold text-white mb-2">Ready to take action?</h2>
-        <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
+        <p className="text-brand-100 text-sm mb-6 max-w-md mx-auto">
           Schedule a free 30-minute call with a RedCube advisor to build your personalized financial plan.
         </p>
         <Link
           href="/schedule"
-          className="inline-flex items-center gap-2 px-7 py-3.5 bg-rose-600 hover:bg-rose-700 transition-colors text-white font-semibold text-sm rounded-xl"
+          className="inline-flex items-center gap-2 px-7 py-3.5 bg-white hover:bg-brand-50 transition-colors text-brand-700 font-semibold text-sm rounded-xl"
         >
           Schedule Advisor Call <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-[11px] text-slate-500 mt-4">
+        <p className="text-[11px] text-brand-200 mt-4">
           No obligation. Licensed advisors. SEC &amp; FINRA compliant.
         </p>
       </section>
@@ -351,15 +351,15 @@ export default async function ResultsPage({
   const { id } = await searchParams
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F8FAFC]">
 
-      {/* Dark navy header */}
-      <header className="bg-slate-900 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
-        <Link href="/" className="flex items-center gap-2 text-[15px] text-white font-semibold">
-          <span className="text-rose-500 text-lg leading-none">■</span>
+      {/* Light header */}
+      <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
+        <Link href="/" className="flex items-center gap-2 text-[15px] text-gray-900 font-semibold">
+          <span className="text-brand-600 text-lg leading-none">■</span>
           RedCube <span className="font-bold">WealthOS</span>
         </Link>
-        <span className="text-[11px] text-slate-400 tracking-[1.2px] uppercase">Assessment Results</span>
+        <span className="text-[11px] text-gray-400 tracking-[1.2px] uppercase">Assessment Results</span>
       </header>
 
       <main className="mx-auto max-w-[900px] px-4 py-10">
@@ -377,8 +377,8 @@ export default async function ResultsPage({
             <ResultsContent id={id} />
           ) : (
             <div className="flex flex-col items-center justify-center py-32 gap-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-slate-400" />
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-gray-400" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-1">No assessment found</h2>
@@ -386,7 +386,7 @@ export default async function ResultsPage({
               </div>
               <Link
                 href="/assessment"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
               >
                 Take the assessment <ArrowRight className="w-4 h-4" />
               </Link>

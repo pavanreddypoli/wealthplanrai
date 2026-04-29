@@ -213,26 +213,26 @@ function NotesPanel({
             value={noteTitle}
             onChange={e => onTitleChange(e.target.value)}
             placeholder="Note title..."
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-slate-400 transition-colors placeholder:text-gray-400"
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-400 transition-colors placeholder:text-gray-400"
           />
           <textarea
             value={noteBody}
             onChange={e => onBodyChange(e.target.value)}
             placeholder="Write your note..."
             rows={4}
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-slate-400 transition-colors resize-none placeholder:text-gray-400 leading-relaxed"
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-400 transition-colors resize-none placeholder:text-gray-400 leading-relaxed"
           />
           <input
             type="text"
             value={noteTags}
             onChange={e => onTagsChange(e.target.value)}
             placeholder="Tags: retirement, urgent..."
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-slate-400 transition-colors placeholder:text-gray-400"
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-400 transition-colors placeholder:text-gray-400"
           />
           <button
             onClick={onSave}
             disabled={saving || !noteBody.trim()}
-            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+            className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
           >
             {saving ? 'Saving…' : 'Save Note'}
           </button>
@@ -345,7 +345,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search clients…"
-              className="pl-8 pr-3 h-8 w-52 text-sm border border-gray-200 rounded-lg outline-none focus:border-slate-400 transition-colors bg-gray-50 placeholder:text-gray-400"
+              className="pl-8 pr-3 h-8 w-52 text-sm border border-gray-200 rounded-lg outline-none focus:border-brand-400 transition-colors bg-gray-50 placeholder:text-gray-400"
             />
           </div>
           <button className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
@@ -402,7 +402,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
             </div>
             <button
               onClick={copyAssessmentLink}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-xl hover:bg-brand-700 transition-colors"
             >
               <LinkIcon className="w-3.5 h-3.5" />
               Share Assessment Link
@@ -502,19 +502,19 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
                             <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={() => router.push(`/results?id=${row.id}`)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-slate-700 hover:bg-gray-100 transition-colors"
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-brand-700 hover:bg-gray-100 transition-colors"
                                 title="View results"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={e => openPanel(row, e)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-slate-700 hover:bg-gray-100 transition-colors relative"
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-brand-700 hover:bg-gray-100 transition-colors relative"
                                 title="Advisor notes"
                               >
                                 <StickyNote className="w-4 h-4" />
                                 {row.note_count > 0 && (
-                                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-brand-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
                                     {row.note_count > 9 ? '9+' : row.note_count}
                                   </span>
                                 )}

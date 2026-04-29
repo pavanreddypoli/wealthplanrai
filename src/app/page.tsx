@@ -72,18 +72,18 @@ export default function HomePage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gray-950 text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(220,38,38,0.15),transparent_60%)]" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/50 to-slate-50">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.08),transparent_60%)]" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-36 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-900/50 border border-brand-800 text-brand-400 text-xs font-medium mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-brand-600 text-xs font-medium mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
             Now in early access — 14-day free trial
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-gray-900">
             The AI wealth platform<br />
-            <span className="text-brand-400">built for advisors</span>
+            <span className="text-brand-600">built for advisors</span>
           </h1>
-          <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
             RedCube WealthOS combines AI-powered financial planning, compliance automation,
             and client management in one place — so you can focus on advice, not admin.
           </p>
@@ -94,7 +94,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="#features">
-              <Button variant="secondary" size="lg" className="w-full sm:w-auto bg-transparent text-white border-gray-700 hover:bg-gray-800">
+              <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 See how it works
               </Button>
             </Link>
@@ -164,7 +164,7 @@ export default function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 bg-gray-50">
+      <section id="pricing" className="py-24 bg-[#F8FAFC]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900">Simple, transparent pricing</h2>
@@ -176,35 +176,35 @@ export default function HomePage() {
                 key={plan.name}
                 className={`rounded-2xl p-8 border ${
                   plan.highlighted
-                    ? 'bg-gray-950 text-white border-gray-800 shadow-xl scale-105'
+                    ? 'bg-brand-600 text-white border-brand-700 shadow-xl scale-105'
                     : 'bg-white text-gray-900 border-gray-200'
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-brand-600 text-white text-xs font-medium mb-4">
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium mb-4">
                     Most popular
                   </div>
                 )}
                 <h3 className="font-bold text-lg">{plan.name}</h3>
-                <p className={`text-sm mt-1 ${plan.highlighted ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-sm mt-1 ${plan.highlighted ? 'text-brand-200' : 'text-gray-500'}`}>
                   {plan.description}
                 </p>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className={plan.highlighted ? 'text-gray-400' : 'text-gray-500'}>{plan.period}</span>
+                  <span className={plan.highlighted ? 'text-brand-200' : 'text-gray-500'}>{plan.period}</span>
                 </div>
                 <ul className="mt-6 space-y-3">
                   {plan.features.map(f => (
-                    <li key={f} className={`flex items-start gap-2 text-sm ${plan.highlighted ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <span className="text-brand-500 mt-0.5 flex-shrink-0">✓</span>
+                    <li key={f} className={`flex items-start gap-2 text-sm ${plan.highlighted ? 'text-brand-100' : 'text-gray-600'}`}>
+                      <span className={`mt-0.5 flex-shrink-0 ${plan.highlighted ? 'text-brand-200' : 'text-brand-500'}`}>✓</span>
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link href="/assessment" className="block mt-8">
                   <Button
-                    className="w-full"
-                    variant={plan.highlighted ? 'primary' : 'secondary'}
+                    className={`w-full ${plan.highlighted ? 'bg-white text-brand-700 hover:bg-brand-50 border-0' : ''}`}
+                    variant={plan.highlighted ? 'secondary' : 'primary'}
                     size="md"
                   >
                     {plan.cta}
@@ -217,7 +217,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-950 text-gray-400 py-12">
+      <footer className="bg-slate-900 text-gray-400 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">

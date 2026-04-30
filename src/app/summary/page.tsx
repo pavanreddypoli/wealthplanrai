@@ -386,10 +386,10 @@ export default async function SummaryPage({
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/dashboard"
+              href="/"
               className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white hover:bg-brand-50 transition-colors text-brand-700 font-semibold text-sm rounded-xl"
             >
-              Go to My Dashboard <ArrowRight className="w-4 h-4" />
+              Return to Home <ArrowRight className="w-4 h-4" />
             </Link>
             <DownloadButton assessmentId={row.id} />
           </div>

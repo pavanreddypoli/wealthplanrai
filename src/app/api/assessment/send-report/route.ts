@@ -33,13 +33,16 @@ function topGaps(sr: ScoreResults | null): string[] {
 export async function POST(req: NextRequest) {
   try {
     const { assessmentId } = await req.json() as { assessmentId: string }
+    console.log('[send-report] called for assessment:', assessmentId)
+    console.log('[send-report] SendGrid key present:', !!process.env.SENDGRID_API_KEY)
+    console.log('[send-report] From email:', process.env.SENDGRID_FROM_EMAIL)
+
     if (!assessmentId) {
       return NextResponse.json({ error: 'assessmentId required' }, { status: 400 })
     }
 
     const supabase = adminClient()
 
-    // Fetch assessment + selected advisor in one go
     const { data, error } = await supabase
       .from('assessments')
       .select('id, full_name, email, risk_profile, score, score_results, answers, created_at, selected_advisor_id')
@@ -50,6 +53,8 @@ export async function POST(req: NextRequest) {
       console.error('[send-report] assessment not found:', error)
       return NextResponse.json({ error: 'assessment not found' }, { status: 404 })
     }
+
+    console.log('[send-report] assessment fetched:', data.id, 'email:', data.email)
 
     const sr       = data.score_results as ScoreResults | null
     const answers  = (data.answers ?? {}) as Record<string, unknown>
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest) {
         .single()
       advisorEmail = advisor?.email ?? null
       advisorName  = advisor?.full_name ?? null
+      console.log('[send-report] selected advisor:', advisorName, advisorEmail)
     }
 
     const assessmentForPDF = {
@@ -84,25 +90,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate both PDFs in parallel
+    console.log('[send-report] generating PDFs...')
     const [clientPDF, advisorPDF] = await Promise.all([
       generateClientPDF(assessmentForPDF),
       generateAdvisorPDF(assessmentForPDF),
     ])
+    console.log('[send-report] PDFs generated. Client:', clientPDF.length, 'bytes. Advisor:', advisorPDF.length, 'bytes.')
 
-    // Build email promises
-    const emailJobs: Promise<void>[] = [
-      sendInfoEmail(name, email, (data.score as number) ?? 0, data.risk_profile as string, pillars, gaps, assessmentId, advisorPDF),
-    ]
+    let emailsSent = 0
 
-    if (email) {
-      emailJobs.push(
-        sendClientEmail(email, name, assessmentId, (data.score as number) ?? 0, data.risk_profile as string, pillars, clientPDF),
-      )
+    // Info email always fires
+    try {
+      await sendInfoEmail(name, email, (data.score as number) ?? 0, data.risk_profile as string, pillars, gaps, assessmentId, advisorPDF)
+      console.log('[send-report] info email sent successfully to company inbox')
+      emailsSent++
+    } catch (e) {
+      console.error('[send-report] info email failed:', (e as Error).message)
     }
 
+    // Client email if we have their address
+    if (email) {
+      try {
+        await sendClientEmail(email, name, assessmentId, (data.score as number) ?? 0, data.risk_profile as string, pillars, clientPDF)
+        console.log('[send-report] client email sent successfully to:', email)
+        emailsSent++
+      } catch (e) {
+        console.error('[send-report] client email failed:', (e as Error).message)
+      }
+    } else {
+      console.log('[send-report] skipping client email — no email address on assessment')
+    }
+
+    // Advisor email if one was selected
     if (advisorEmail) {
-      emailJobs.push(
-        sendAdvisorEmail(
+      try {
+        await sendAdvisorEmail(
           advisorEmail,
           advisorName ?? 'Advisor',
           name,
@@ -114,27 +136,25 @@ export async function POST(req: NextRequest) {
           [String(answers.topPriority1 ?? ''), String(answers.topPriority2 ?? ''), String(answers.topPriority3 ?? '')],
           assessmentId,
           advisorPDF,
-        ),
-      )
+        )
+        console.log('[send-report] advisor email sent successfully to:', advisorEmail)
+        emailsSent++
+      } catch (e) {
+        console.error('[send-report] advisor email failed:', (e as Error).message)
+      }
     }
 
-    // Send all emails in parallel; update status regardless of email outcome
-    const results = await Promise.allSettled(emailJobs)
-    results.forEach((r, i) => {
-      if (r.status === 'rejected') console.error(`[send-report] email job ${i} failed:`, r.reason)
-    })
-
-    // Update assessment status to emailed
+    // Update assessment status
     await supabase
       .from('assessments')
       .update({ status: 'emailed' })
       .eq('id', assessmentId)
 
-    const emailsSent = results.filter(r => r.status === 'fulfilled').length
+    console.log('[send-report] done. Emails sent:', emailsSent)
     return NextResponse.json({ success: true, emailsSent })
 
   } catch (err) {
-    console.error('[send-report] error:', err)
+    console.error('[send-report] fatal error:', err)
     return NextResponse.json({ error: 'Report send failed' }, { status: 500 })
   }
 }

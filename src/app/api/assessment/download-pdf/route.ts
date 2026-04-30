@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       ? `${safeName}_Advisor_Report.pdf`
       : `${safeName}_Financial_Summary.pdf`
 
-    return new NextResponse(pdfBuffer.buffer as ArrayBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type':        'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,

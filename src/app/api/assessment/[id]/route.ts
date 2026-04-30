@@ -10,10 +10,10 @@ function adminClient() {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params
+    const { id } = params
     const body = await request.json() as { selected_advisor_id?: string | null }
 
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })

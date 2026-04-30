@@ -2,20 +2,19 @@ import type { ScoreResults } from '@/lib/scoring'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-interface PillarData {
+export interface PillarScores {
+  protect: number
+  grow: number
+  legacy: number
+}
+
+interface ProductRow {
   name: string
-  score: number
-  status: string
-  findings: string[]
+  status: 'Recommended' | 'Consider' | 'Not applicable'
+  rationale: string
 }
 
-interface ProductRec {
-  title: string
-  explanation: string
-  priority: string
-}
-
-interface AssessmentForPDF {
+export interface AssessmentForPDF {
   clientName: string
   clientEmail: string | null
   riskProfile: string
@@ -23,12 +22,21 @@ interface AssessmentForPDF {
   scoreResults: ScoreResults | null
   answers: Record<string, unknown>
   createdAt: string
+  assessmentId?: string
+  advisorName?: string | null
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Shared helpers ─────────────────────────────────────────────────────────────
 
-function n(val: unknown): number {
-  return parseFloat(String(val ?? '0')) || 0
+function n(val: unknown): number { return parseFloat(String(val ?? '0')) || 0 }
+function clamp(v: number): number { return Math.max(0, Math.min(100, Math.round(v))) }
+function fmt$(v: unknown): string { const x = n(v); return x ? `$${x.toLocaleString()}` : '—' }
+function capWords(s: string): string { return s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) }
+
+function scoreRGB(score: number): [number, number, number] {
+  if (score >= 80) return [22, 163, 74]
+  if (score >= 50) return [245, 158, 11]
+  return [239, 68, 68]
 }
 
 function score2status(score: number, labels: [string, string, string]): string {
@@ -37,11 +45,23 @@ function score2status(score: number, labels: [string, string, string]): string {
   return labels[2]
 }
 
-function scoreRGB(score: number): [number, number, number] {
-  if (score >= 80) return [22, 163, 74]   // green
-  if (score >= 50) return [245, 158, 11]  // amber
-  return [239, 68, 68]                    // red
+function computePillars(sr: ScoreResults | null): PillarScores {
+  if (!sr) return { protect: 0, grow: 0, legacy: 0 }
+  return {
+    protect: clamp((sr.sub_scores.insurance + sr.sub_scores.estate) / 2),
+    grow:    clamp((sr.sub_scores.investments + sr.sub_scores.retirement + sr.sub_scores.cashflow + sr.sub_scores.tax) / 4),
+    legacy:  clamp(sr.sub_scores.estate),
+  }
 }
+
+function getAge(dob: unknown): number | null {
+  if (!dob) return null
+  const birth = new Date(String(dob))
+  const diff  = Date.now() - birth.getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))
+}
+
+// ── Findings helpers ───────────────────────────────────────────────────────────
 
 function getProtectFindings(a: Record<string, unknown>): string[] {
   const f: string[] = []
@@ -52,370 +72,1054 @@ function getProtectFindings(a: Record<string, unknown>): string[] {
   if (a.hasWill !== 'yes')                                                       f.push('No will on file')
   if (a.hasPOA !== 'yes')                                                        f.push('No power of attorney')
   if (a.hasHealthcareDirective !== 'yes')                                        f.push('No healthcare directive')
-  return f.length ? f.slice(0, 4) : ['Protection coverage adequate']
+  return f.length ? f.slice(0, 5) : ['Core protection coverage appears adequate']
 }
 
 function getGrowFindings(a: Record<string, unknown>): string[] {
   const f: string[] = []
-  if (a.maxing401k === 'no')                                                     f.push('Not maximizing 401(k)')
-  const accounts = (a.retirementAccounts as string[]) ?? []
+  if (a.maxing401k === 'no')                                                     f.push('Not maximizing 401(k) contributions')
+  const accounts = Array.isArray(a.retirementAccounts) ? a.retirementAccounts as string[] : []
   if (!accounts.includes('roth_ira') && !accounts.includes('roth401k'))          f.push('No Roth account detected')
-  if (n(a.currentRetirementSavings) === 0)                                       f.push('No retirement savings yet')
+  if (n(a.currentRetirementSavings) === 0)                                       f.push('No current retirement savings')
   if (a.hasbudget !== 'yes')                                                     f.push('No formal monthly budget')
-  return f.length ? f.slice(0, 4) : ['Growth trajectory appears solid']
+  const bracket = parseInt(String(a.taxBracket ?? '0'))
+  if (bracket >= 22 && a.taxLossHarvesting !== 'yes')                            f.push('Tax-loss harvesting opportunity identified')
+  return f.length ? f.slice(0, 5) : ['Growth trajectory appears solid']
 }
 
 function getLegacyFindings(a: Record<string, unknown>): string[] {
   const f: string[] = []
-  if (a.hasTrust !== 'yes')                                                      f.push('No living trust')
+  if (a.hasTrust !== 'yes')                                                      f.push('No living trust established')
   if (a.hasBeneficiaries !== 'yes')                                              f.push('Beneficiary designations may be outdated')
+  const estateVal    = n(a.estateValue)
+  const lifeCoverage = n(a.lifeCoverageAmount)
+  if (estateVal > 500_000 && lifeCoverage < estateVal * 0.5)                    f.push('Estate value may exceed life insurance coverage')
   if (a.lastReviewedEstate === 'never' || a.lastReviewedEstate === '5yr+')       f.push('Estate plan not reviewed recently')
-  return f.length ? f.slice(0, 3) : ['Core legacy documents present']
+  if (a.hasEstateAttorney !== 'yes')                                             f.push('No estate attorney on file')
+  return f.length ? f.slice(0, 4) : ['Core legacy documents present']
 }
 
-function getProductRecs(a: Record<string, unknown>): ProductRec[] {
-  const recs: ProductRec[] = []
-  if (a.hasLifeInsurance !== 'yes')
-    recs.push({ title: 'Term Life Insurance or IUL', explanation: "Protect your family's financial future and replace lost income.", priority: 'High' })
-  if (a.maxing401k === 'no')
-    recs.push({ title: 'Maximize 401(k) Contributions', explanation: 'Reduce taxable income and accelerate tax-deferred growth.', priority: 'High' })
-  const accounts = (a.retirementAccounts as string[]) ?? []
-  if (!accounts.includes('roth_ira') && !accounts.includes('roth401k'))
-    recs.push({ title: 'Open a Roth IRA', explanation: 'Build tax-free retirement income.', priority: 'High' })
-  const risk    = a.riskTolerance as string
-  const horizon = a.investmentHorizon as string
-  if ((risk === 'conservative' || risk === 'moderate') && (horizon === '10-20' || horizon === '20+'))
-    recs.push({ title: 'Fixed Indexed Annuity (FIA)', explanation: 'Principal protection with market-linked growth potential.', priority: 'Medium' })
-  if (a.hasDisabilityInsurance !== 'yes' && a.hasDisabilityInsurance !== 'employer')
-    recs.push({ title: 'Own-Occupation Disability Insurance', explanation: 'Replace 60–70% of income if unable to work.', priority: 'High' })
-  if (a.hasTrust !== 'yes' && n(a.estateValue) > 500_000)
-    recs.push({ title: 'Revocable Living Trust', explanation: 'Avoid probate — assets pass directly to beneficiaries.', priority: 'Medium' })
-  return recs
+// ── Advisor product recommendation tables ──────────────────────────────────────
+
+function getProtectProducts(a: Record<string, unknown>): ProductRow[] {
+  const hasLife = a.hasLifeInsurance === 'yes'
+  const hasDI   = a.hasDisabilityInsurance === 'yes' || a.hasDisabilityInsurance === 'employer'
+  const hasLTC  = a.hasLongTermCare === 'yes'
+  const hasHI   = a.hasHealthInsurance && a.hasHealthInsurance !== 'none'
+  const hasUmb  = a.hasUmbrella === 'yes'
+  const lifeType = String(a.lifeInsuranceType ?? '')
+  const hasDepend = n(a.dependents) > 0
+  const hasBizInc = a.hasBusinessIncome === 'yes'
+
+  return [
+    { name: 'Term Life Insurance',
+      status: !hasLife ? 'Recommended' : (lifeType === 'term' ? 'Consider' : 'Not applicable'),
+      rationale: !hasLife ? 'No life insurance found — immediate coverage gap for income replacement' : lifeType === 'term' ? 'Review coverage amount and remaining term' : 'Whole/permanent life already in place' },
+    { name: 'Whole Life Insurance',
+      status: !hasLife ? 'Consider' : 'Not applicable',
+      rationale: !hasLife && hasDepend ? 'Permanent coverage provides lifelong protection and cash value accumulation' : 'Evaluate need based on estate and legacy goals' },
+    { name: 'Universal Life Insurance',
+      status: !hasLife ? 'Consider' : 'Not applicable',
+      rationale: 'Flexible premiums and adjustable death benefit — suitable if income varies' },
+    { name: 'Indexed Universal Life (IUL)',
+      status: !hasLife ? 'Recommended' : 'Consider',
+      rationale: !hasLife ? 'Provides death benefit plus tax-advantaged cash value with downside protection' : 'Evaluate IUL as supplement to existing coverage for growth component' },
+    { name: 'Variable Universal Life (VUL)',
+      status: !hasLife && a.riskTolerance === 'aggressive' ? 'Consider' : 'Not applicable',
+      rationale: 'Market-linked cash value — suitable only for aggressive risk tolerance' },
+    { name: 'Disability Insurance',
+      status: !hasDI ? 'Recommended' : 'Consider',
+      rationale: !hasDI ? 'No disability coverage — income is completely unprotected if unable to work' : 'Review own-occupation definition and benefit period' },
+    { name: 'Critical Illness Insurance',
+      status: 'Consider',
+      rationale: 'Lump-sum payout on diagnosis of cancer, heart attack, stroke — fills gap not covered by health insurance' },
+    { name: 'Long-Term Care Insurance',
+      status: !hasLTC ? 'Recommended' : 'Not applicable',
+      rationale: !hasLTC ? 'No LTC coverage — nursing home costs can exceed $100K/year and deplete assets rapidly' : 'LTC coverage in place — review benefit period and inflation rider' },
+    { name: 'Health Insurance',
+      status: !hasHI ? 'Recommended' : 'Not applicable',
+      rationale: !hasHI ? 'No health insurance detected — critical coverage gap' : 'Health insurance in place' },
+    { name: 'Accident Insurance',
+      status: 'Consider',
+      rationale: 'Low-cost supplemental coverage for accidental injury — fills gap in existing health/disability coverage' },
+    { name: 'Income Replacement Insurance',
+      status: !hasDI ? 'Consider' : 'Not applicable',
+      rationale: 'Short-term income replacement to bridge gap before long-term disability benefits begin' },
+    { name: 'Key Person Insurance',
+      status: hasBizInc ? 'Recommended' : 'Not applicable',
+      rationale: hasBizInc ? 'Business income detected — key person coverage protects business continuity' : 'Not applicable — no business income reported' },
+    { name: 'Umbrella Liability Insurance',
+      status: !hasUmb ? 'Consider' : 'Not applicable',
+      rationale: !hasUmb ? 'Umbrella policy extends liability coverage above auto/home limits — important as net worth grows' : 'Umbrella coverage in place' },
+  ]
 }
 
-// ── PDF Generator ─────────────────────────────────────────────────────────────
+function getGrowProducts(a: Record<string, unknown>): ProductRow[] {
+  const accounts   = Array.isArray(a.retirementAccounts) ? a.retirementAccounts as string[] : []
+  const has401k    = accounts.includes('401k')
+  const hasRoth    = accounts.includes('roth_ira') || accounts.includes('roth401k')
+  const hasIRA     = accounts.includes('traditional_ira')
+  const hasSEP     = accounts.includes('sep_ira')
+  const hasHSA     = accounts.includes('hsa')
+  const is529      = accounts.includes('529')
+  const hasDep     = n(a.dependents) > 0
+  const selfEmpl   = a.employmentStatus === 'self_employed' || a.hasBusinessIncome === 'yes'
+  const bracket    = parseInt(String(a.taxBracket ?? '0'))
+  const risk       = String(a.riskTolerance ?? 'moderate')
+  const horizon    = String(a.investmentHorizon ?? '')
+  const isConserv  = risk === 'conservative' || risk === 'moderate'
+  const longHorizon = horizon === '10-20' || horizon === '20+'
 
-export async function generateAssessmentPDF(assessment: AssessmentForPDF): Promise<Buffer> {
-  // Dynamic import to avoid SSR/client-side bundling issues
-  const { jsPDF } = await import('jspdf')
-  const autoTable = (await import('jspdf-autotable')).default
+  return [
+    { name: '401(k) / 403(b)',
+      status: has401k ? 'Consider' : 'Recommended',
+      rationale: !has401k ? 'No 401(k) detected — maximize employer match immediately' : a.maxing401k === 'no' ? '401(k) exists but not maxing contributions — increase to annual limit ($23,000 in 2024)' : 'Maxing 401(k) — excellent. Review investment allocation.' },
+    { name: 'Roth IRA',
+      status: !hasRoth ? 'Recommended' : 'Consider',
+      rationale: !hasRoth ? 'No Roth account — open Roth IRA for tax-free retirement income ($7,000/year limit in 2024)' : 'Roth in place — consider backdoor Roth if income limits apply' },
+    { name: 'Traditional IRA',
+      status: !hasIRA && !hasRoth ? 'Consider' : 'Not applicable',
+      rationale: 'Tax-deductible contributions reduce current taxable income — review deductibility based on income and plan coverage' },
+    { name: 'SEP IRA',
+      status: selfEmpl && !hasSEP ? 'Recommended' : 'Not applicable',
+      rationale: selfEmpl ? 'Self-employed detected — SEP IRA allows up to 25% of net earnings ($66,000 max in 2024)' : 'Not applicable — requires self-employment income' },
+    { name: 'HSA (Health Savings Account)',
+      status: !hasHSA && a.hasHealthInsurance === 'hdhp' ? 'Recommended' : 'Consider',
+      rationale: 'Triple tax advantage — pre-tax contributions, tax-free growth, tax-free withdrawals for medical. Invest excess for retirement' },
+    { name: '529 College Savings Plan',
+      status: hasDep && !is529 ? 'Recommended' : hasDep ? 'Consider' : 'Not applicable',
+      rationale: hasDep ? 'Dependents detected — 529 provides tax-free growth for education expenses' : 'Consider for future education funding needs' },
+    { name: 'Taxable Brokerage Account',
+      status: 'Consider',
+      rationale: 'Flexible after-tax investing with no contribution limits — use after maxing tax-advantaged accounts' },
+    { name: 'Mutual Funds / ETFs',
+      status: 'Recommended',
+      rationale: 'Core diversified holdings — low-cost index ETFs provide broad market exposure appropriate for most investors' },
+    { name: 'Fixed Annuity',
+      status: isConserv ? 'Consider' : 'Not applicable',
+      rationale: isConserv ? 'Guaranteed fixed rate — suitable for conservative investors seeking predictable income' : 'Not aligned with aggressive risk profile' },
+    { name: 'Fixed Indexed Annuity (FIA)',
+      status: isConserv && longHorizon ? 'Recommended' : 'Consider',
+      rationale: isConserv && longHorizon ? 'Principal protection + market-linked growth — ideal for conservative long-term investors' : 'Consider for a portion of portfolio seeking downside protection' },
+    { name: 'MYGA (Multi-Year Guaranteed Annuity)',
+      status: isConserv ? 'Consider' : 'Not applicable',
+      rationale: 'CD-like fixed rate for 3-10 years with tax-deferred growth — suitable for short/medium-term conservative allocation' },
+    { name: 'IUL (Growth Component)',
+      status: bracket >= 22 ? 'Consider' : 'Not applicable',
+      rationale: bracket >= 22 ? `Tax bracket ${bracket}% — IUL cash value grows tax-deferred with tax-free loans, valuable for high earners` : 'Evaluate if tax bracket increases' },
+    { name: 'Robo Advisory Portfolio',
+      status: 'Consider',
+      rationale: 'Low-cost automated rebalancing — suitable for hands-off investors with straightforward portfolios' },
+    { name: 'VUL (Growth Component)',
+      status: risk === 'aggressive' || risk === 'very_aggressive' ? 'Consider' : 'Not applicable',
+      rationale: 'Market-linked growth inside life insurance wrapper — for aggressive investors seeking tax-deferred growth' },
+  ]
+}
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  const W   = doc.internal.pageSize.getWidth()
-  const H   = doc.internal.pageSize.getHeight()
-  const BLUE: [number, number, number] = [37, 99, 235]
-  const DARK: [number, number, number] = [17, 24, 39]
-  const GRAY: [number, number, number] = [107, 114, 128]
+function getLegacyProducts(a: Record<string, unknown>): ProductRow[] {
+  const hasWill    = a.hasWill === 'yes'
+  const hasTrust   = a.hasTrust === 'yes'
+  const hasPOA     = a.hasPOA === 'yes'
+  const hasHCD     = a.hasHealthcareDirective === 'yes'
+  const hasLife    = a.hasLifeInsurance === 'yes'
+  const hasBizInc  = a.hasBusinessIncome === 'yes'
+  const estateVal  = n(a.estateValue)
+  const largeEstate = estateVal > 1_000_000
+  const hasDep     = n(a.dependents) > 0
 
-  const date    = new Date(assessment.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  const answers = assessment.answers
-  const sr      = assessment.scoreResults
+  return [
+    { name: 'Last Will & Testament',
+      status: !hasWill ? 'Recommended' : 'Consider',
+      rationale: !hasWill ? 'No will on file — critical gap. Assets will pass through probate without direction' : 'Review will for accuracy — recommend review every 3-5 years or after major life event' },
+    { name: 'Revocable Living Trust',
+      status: !hasTrust && (largeEstate || hasDep) ? 'Recommended' : 'Consider',
+      rationale: !hasTrust && largeEstate ? 'Estate value exceeds $1M — trust avoids costly probate and provides privacy' : !hasTrust && hasDep ? 'Dependents detected — trust provides structured inheritance and protects minor children' : 'Consider trust as estate grows above $500K' },
+    { name: 'Irrevocable Trust',
+      status: largeEstate ? 'Consider' : 'Not applicable',
+      rationale: largeEstate ? 'Large estate — irrevocable trust can remove assets from taxable estate, reducing estate tax exposure' : 'Evaluate when estate exceeds federal estate tax threshold' },
+    { name: 'Power of Attorney (Financial)',
+      status: !hasPOA ? 'Recommended' : 'Not applicable',
+      rationale: !hasPOA ? 'No POA in place — without this, court must appoint guardian if client becomes incapacitated' : 'Financial POA in place — review agent designation' },
+    { name: 'Healthcare Directive / Living Will',
+      status: !hasHCD ? 'Recommended' : 'Not applicable',
+      rationale: !hasHCD ? 'No healthcare directive — medical decisions left to courts if client cannot communicate wishes' : 'Healthcare directive in place — confirm it meets state requirements' },
+    { name: 'Life Insurance (Legacy / IUL)',
+      status: !hasLife ? 'Recommended' : 'Consider',
+      rationale: !hasLife ? 'No life insurance — proceeds could fund estate taxes, equalize inheritance, or provide legacy gifts' : 'Review death benefit for estate transfer strategy' },
+    { name: 'Annuity Beneficiary Structure',
+      status: 'Consider',
+      rationale: 'Review annuity beneficiary designations — improper structuring can trigger immediate taxation for heirs' },
+    { name: 'Charitable Remainder Trust',
+      status: largeEstate ? 'Consider' : 'Not applicable',
+      rationale: largeEstate ? 'Large estate — CRT converts appreciated assets to income stream, reduces estate taxes, provides charitable deduction' : 'Evaluate for philanthropic goals' },
+    { name: 'Estate Freeze / Gifting Strategies',
+      status: largeEstate ? 'Consider' : 'Not applicable',
+      rationale: largeEstate ? 'Annual gift exclusion ($18,000/person in 2024) — systematic gifting reduces taxable estate over time' : 'Not a current priority' },
+    { name: 'Business Succession Plan',
+      status: hasBizInc ? 'Recommended' : 'Not applicable',
+      rationale: hasBizInc ? 'Business income detected — buy-sell agreement funded by life insurance ensures smooth ownership transfer' : 'Not applicable — no business income reported' },
+  ]
+}
 
-  function newPage() {
-    doc.addPage()
-    // Page footer
+// ── Top priority recommendations for advisor ───────────────────────────────────
+
+function getAdvisorPriorityRecs(a: Record<string, unknown>, sr: ScoreResults | null): Array<{priority: string; category: string; product: string; rationale: string; impact: string}> {
+  const recs: Array<{priority: string; category: string; product: string; rationale: string; impact: string}> = []
+
+  if (a.hasLifeInsurance !== 'yes') {
+    const dep = n(a.dependents)
+    const income = n(a.grossIncome)
+    recs.push({ priority: 'High', category: 'Protection', product: 'Term Life / IUL',
+      rationale: `Client has no life insurance and ${dep > 0 ? `${dep} dependent(s)` : 'dependents potentially unprotected'}. Annual income of ${fmt$(income)} would be lost to family if client were to pass.`,
+      impact: `Closes a ${fmt$(income * 10)} income replacement gap (10x income rule)` })
+  }
+
+  if (a.hasDisabilityInsurance !== 'yes' && a.hasDisabilityInsurance !== 'employer') {
+    recs.push({ priority: 'High', category: 'Protection', product: 'Own-Occupation Disability Insurance',
+      rationale: `Client has no disability coverage. With gross income of ${fmt$(a.grossIncome)}, inability to work would immediately impact financial stability.`,
+      impact: `Replaces 60-70% of income (${fmt$(n(a.grossIncome) * 0.65 / 12)}/month) during disability` })
+  }
+
+  if (a.maxing401k === 'no') {
+    recs.push({ priority: 'High', category: 'Growth', product: 'Maximize 401(k)',
+      rationale: 'Client is not maximizing 401(k) contributions. Every dollar not contributed represents missed tax deduction and compound growth.',
+      impact: 'Increasing to annual limit could add $200K+ in additional retirement savings over 10 years' })
+  }
+
+  const accounts = Array.isArray(a.retirementAccounts) ? a.retirementAccounts as string[] : []
+  if (!accounts.includes('roth_ira') && !accounts.includes('roth401k')) {
+    recs.push({ priority: 'High', category: 'Growth', product: 'Roth IRA',
+      rationale: 'No Roth account detected. Tax-free growth is one of the most valuable retirement planning tools available.',
+      impact: '$7,000/year for 20 years at 7% = $340K in tax-free retirement income' })
+  }
+
+  if (a.hasTrust !== 'yes' && n(a.estateValue) > 500_000) {
+    recs.push({ priority: 'Medium', category: 'Legacy', product: 'Revocable Living Trust',
+      rationale: `Estate value of ${fmt$(a.estateValue)} warrants trust planning to avoid probate and provide efficient wealth transfer.`,
+      impact: 'Probate costs typically 3-8% of estate — trust saves $15K-$120K+ in this case' })
+  }
+
+  if (a.hasWill !== 'yes') {
+    recs.push({ priority: 'High', category: 'Legacy', product: 'Last Will & Testament',
+      rationale: 'Client has no will on file. Assets will be distributed per state intestacy laws, potentially against client wishes.',
+      impact: 'Ensures assets pass to intended beneficiaries — prevents court-supervised distribution' })
+  }
+
+  if (a.hasLongTermCare !== 'yes') {
+    recs.push({ priority: 'Medium', category: 'Protection', product: 'Long-Term Care Insurance',
+      rationale: 'No LTC coverage detected. Average nursing home cost exceeds $100K/year and can rapidly deplete retirement assets.',
+      impact: 'Protects $400K-$800K in assets from potential LTC expenditure' })
+  }
+
+  const bracket = parseInt(String(a.taxBracket ?? '0'))
+  if (bracket >= 24 && a.hasAccountant !== 'yes') {
+    recs.push({ priority: 'Medium', category: 'Tax', product: 'CPA Engagement',
+      rationale: `Client in ${bracket}% bracket with no accountant. Professional tax planning typically saves multiples of the fee.`,
+      impact: 'Estimated $2,000-$10,000+ in annual tax savings through deductions, timing strategies, and entity structuring' })
+  }
+
+  if (!accounts.includes('roth_ira') && n(a.grossIncome) > 100_000) {
+    recs.push({ priority: 'Medium', category: 'Tax', product: 'Backdoor Roth Conversion',
+      rationale: 'High income client without Roth. Backdoor Roth strategy allows Roth funding regardless of income limits.',
+      impact: 'Tax-free growth on $7,000+ per year compounding over working years' })
+  }
+
+  // Fill to 10 from scoring engine
+  if (sr?.recommendations) {
+    const sorted = [...sr.recommendations].sort((a, b) => {
+      const ord: Record<string, number> = { high: 0, medium: 1, low: 2 }
+      return (ord[a.priority] ?? 2) - (ord[b.priority] ?? 2)
+    })
+    for (const r of sorted) {
+      if (recs.length >= 10) break
+      const already = recs.some(x => x.rationale.includes(r.message.substring(0, 20)))
+      if (!already) {
+        recs.push({ priority: r.priority, category: r.category, product: r.category,
+          rationale: r.message, impact: 'See full analysis in report' })
+      }
+    }
+  }
+
+  return recs.slice(0, 10)
+}
+
+// ── Retirement projection ──────────────────────────────────────────────────────
+
+function retirementProjection(a: Record<string, unknown>): string {
+  const currentSavings = n(a.currentRetirementSavings)
+  const monthlyContrib = n(a.monthlyRetirementContrib)
+  const retireAge      = n(a.retirementAge) || 65
+  const dob            = a.dob ? new Date(String(a.dob)) : null
+  const currentAge     = dob ? Math.floor((Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : 40
+  const yearsToRetire  = Math.max(0, retireAge - currentAge)
+  const r              = 0.06 / 12 // 6% annual, monthly
+  const months         = yearsToRetire * 12
+
+  if (months <= 0) return 'Client is at or past retirement age.'
+
+  const futureValue = currentSavings * Math.pow(1 + r, months) + monthlyContrib * ((Math.pow(1 + r, months) - 1) / r)
+  const goalIncome  = n(a.retirementIncomeGoal) || n(a.grossIncome) * 0.8
+  const nestedEgg   = goalIncome * 25 // 4% withdrawal rule
+
+  return `Projected balance at age ${retireAge}: ${fmt$(futureValue)} | Target nest egg (4% rule on $${Math.round(goalIncome).toLocaleString()}/yr): ${fmt$(nestedEgg)} | Gap: ${futureValue >= nestedEgg ? 'None — on track' : fmt$(nestedEgg - futureValue) + ' shortfall'}`
+}
+
+// ── FULL REGULATORY DISCLAIMER ────────────────────────────────────────────────
+
+const ADVISOR_DISCLAIMER = `This report is prepared by RedCube Financial for use by licensed financial professionals only. It does not constitute a solicitation or offer to buy or sell any security or insurance product. All recommendations are based on self-reported client data and have not been independently verified. Past performance is not indicative of future results. All investments involve risk including possible loss of principal.
+
+Insurance products including life insurance, annuities, IUL, FIA, VUL, and disability insurance are subject to underwriting approval and policy terms. Insurance products are not FDIC insured and are not bank deposits or obligations.
+
+Securities products including mutual funds, ETFs, stocks, and variable products may only be offered by registered representatives of a FINRA member broker-dealer. Fixed insurance products may be offered by licensed insurance agents.
+
+This analysis is for informational purposes only. RedCube Financial advisors must conduct their own suitability analysis in accordance with FINRA Rule 2111, SEC Regulation Best Interest, and applicable state regulations before making any product recommendations. All client information must be independently verified.
+
+RedCube Financial LLC is not a registered investment advisor or broker-dealer. This report does not establish a fiduciary relationship. Licensed advisors using this report remain solely responsible for all recommendations made to clients.
+
+© RedCube Financial LLC. Confidential. For licensed professional use only.`
+
+const CLIENT_DISCLAIMER = `This financial assessment summary is prepared by RedCube Financial and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. RedCube Financial advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions.`
+
+// ── generateClientPDF — 4-page client-friendly summary ────────────────────────
+
+export async function generateClientPDF(assessment: AssessmentForPDF): Promise<Buffer> {
+  const { jsPDF }  = await import('jspdf')
+  const autoTable  = (await import('jspdf-autotable')).default
+
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W    = doc.internal.pageSize.getWidth()
+  const H    = doc.internal.pageSize.getHeight()
+  const BLUE: [number, number, number]  = [37, 99, 235]
+  const NAVY: [number, number, number]  = [30, 58, 138]
+  const DARK: [number, number, number]  = [17, 24, 39]
+  const GRAY: [number, number, number]  = [107, 114, 128]
+  const LGRAY: [number, number, number] = [229, 231, 235]
+
+  const a      = assessment.answers
+  const sr     = assessment.scoreResults
+  const date   = new Date(assessment.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const pillars = computePillars(sr)
+  const overall = assessment.overallScore
+
+  function footer() {
+    const pg = doc.getNumberOfPages()
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('RedCube Financial — Confidential Client Report', 14, H - 8)
-    doc.text(`Page ${doc.getNumberOfPages()}`, W - 14, H - 8, { align: 'right' })
+    doc.text('RedCube Financial — Your Personal Financial Summary', 14, H - 8)
+    doc.text(`Page ${pg} of 4`, W - 14, H - 8, { align: 'right' })
   }
+
+  function newPage() { doc.addPage(); footer() }
+
+  // ── PAGE 1: Cover ────────────────────────────────────────────────────────────
+
+  doc.setFillColor(...NAVY)
+  doc.rect(0, 0, W, 100, 'F')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(191, 219, 254)
+  doc.text('REDCUBE FINANCIAL', 14, 22)
+
+  doc.setFontSize(28)
+  doc.setTextColor(255, 255, 255)
+  doc.text('Your Financial', 14, 42)
+  doc.text('Health Summary', 14, 55)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(147, 197, 253)
+  doc.text('Confidential — Prepared exclusively for you', 14, 70)
+
+  doc.setFontSize(9)
+  doc.setTextColor(191, 219, 254)
+  doc.text(`${assessment.clientName}  ·  ${date}`, 14, 85)
+
+  // Pillars tagline
+  doc.setFillColor(30, 58, 138)
+  doc.rect(0, 100, W, 18, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(147, 197, 253)
+  doc.text('PROTECT   |   GROW   |   LEAVE A LEGACY', W / 2, 111, { align: 'center' })
+
+  // Score circle
+  doc.setFillColor(...BLUE)
+  doc.circle(W - 35, 140, 25, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(26)
+  doc.setTextColor(255, 255, 255)
+  doc.text(String(overall), W - 35, 145, { align: 'center' })
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.text('/ 100', W - 35, 153, { align: 'center' })
+  doc.setFontSize(8)
+  doc.text('Overall Score', W - 35, 160, { align: 'center' })
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(...DARK)
+  doc.text('Your Financial Health Score', 14, 136)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...GRAY)
+  doc.text('Based on the RedCube Three Pillars framework', 14, 143)
+  doc.text('Risk Profile: ' + capWords(assessment.riskProfile), 14, 151)
+  doc.text('Completed: ' + date, 14, 158)
+
+  // Intro text
+  doc.setFontSize(10)
+  doc.setTextColor(...DARK)
+  const intro = `Dear ${assessment.clientName.split(' ')[0]},\n\nThank you for completing your RedCube Financial health assessment. This personalized summary evaluates your financial position across our Three Pillars — PROTECT, GROW, and LEAVE A LEGACY — and provides clear, actionable steps tailored to your situation.\n\nA RedCube advisor will reach out within 1 business day to walk through your results and build your plan.`
+  const introLines = doc.splitTextToSize(intro, W - 28) as string[]
+  doc.text(introLines, 14, 175)
+
+  footer()
+
+  // ── PAGE 2: Financial Snapshot ───────────────────────────────────────────────
+
+  newPage()
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(...NAVY)
+  doc.text('Your Financial Snapshot', 14, 22)
+
+  doc.setDrawColor(...LGRAY)
+  doc.setLineWidth(0.5)
+  doc.line(14, 25, W - 14, 25)
+
+  const age = getAge(a.dob)
+  const personalRows: [string, string][] = [
+    ['Name',              assessment.clientName],
+    ['Age',               age ? `${age} years old` : String(a.dob ?? '—')],
+    ['State',             String(a.state ?? '—')],
+    ['Marital Status',    capWords(String(a.maritalStatus ?? '—'))],
+    ['Employment Status', capWords(String(a.employmentStatus ?? '—'))],
+    ['Dependents',        String(a.dependents ?? '0')],
+  ]
+
+  autoTable(doc, {
+    startY: 30,
+    head: [['Personal Details', '']],
+    body: personalRows,
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
+    headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: 'bold' },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65, textColor: GRAY }, 1: { textColor: DARK } },
+    margin: { left: 14, right: 14 },
+  })
+
+  const y1 = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 80
+
+  const financialRows: [string, string][] = [
+    ['Annual Income',          fmt$(a.grossIncome)],
+    ['Monthly Expenses',       fmt$(a.monthlyExpenses)],
+    ['Monthly Savings',        fmt$(a.monthlySavings)],
+    ['Investable Assets',      fmt$(a.investableAssets)],
+    ['Retirement Savings',     fmt$(a.currentRetirementSavings)],
+    ['Emergency Fund',         `${String(a.emergencyFundMonths ?? '0')} months`],
+  ]
+
+  autoTable(doc, {
+    startY: y1 + 6,
+    head: [['Financial Overview', '']],
+    body: financialRows,
+    theme: 'striped',
+    styles: { fontSize: 10, cellPadding: 4 },
+    headStyles: { fillColor: BLUE, textColor: [255, 255, 255], fontStyle: 'bold' },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65, textColor: GRAY }, 1: { textColor: DARK } },
+    margin: { left: 14, right: 14 },
+  })
+
+  const y2 = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 160
+  const overallRGB = scoreRGB(overall)
+
+  doc.setFillColor(248, 250, 252)
+  doc.roundedRect(14, y2 + 8, W - 28, 22, 3, 3, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...DARK)
+  doc.text('Overall Health Score:', 20, y2 + 22)
+  doc.setFontSize(18)
+  doc.setTextColor(...overallRGB)
+  doc.text(`${overall} / 100`, 80, y2 + 22)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...GRAY)
+  doc.text(`(${capWords(assessment.riskProfile)} Investor Profile)`, 120, y2 + 22)
+
+  // ── PAGE 3: Three Pillars ────────────────────────────────────────────────────
+
+  newPage()
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(...NAVY)
+  doc.text('Three Pillars Assessment', 14, 22)
+  doc.setDrawColor(...LGRAY)
+  doc.line(14, 25, W - 14, 25)
+
+  const pillarDefs = [
+    { label: 'PILLAR 1 — PROTECT',        score: pillars.protect, statuses: ['Fully Protected',  'Partially Protected', 'Needs Protection'] as [string,string,string], findings: getProtectFindings(a) },
+    { label: 'PILLAR 2 — GROW',           score: pillars.grow,    statuses: ['Strong Growth',    'Moderate Growth',     'Growth Gap'] as [string,string,string],       findings: getGrowFindings(a) },
+    { label: 'PILLAR 3 — LEAVE A LEGACY', score: pillars.legacy,  statuses: ['Legacy Ready',     'Partial Legacy Plan', 'Legacy Gap'] as [string,string,string],        findings: getLegacyFindings(a) },
+  ]
+
+  let y3 = 32
+  for (const p of pillarDefs) {
+    const rgb = scoreRGB(p.score)
+    const status = score2status(p.score, p.statuses)
+
+    doc.setFillColor(...NAVY)
+    doc.rect(14, y3, W - 28, 8, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(255, 255, 255)
+    doc.text(p.label, 18, y3 + 5.5)
+
+    // Score
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...rgb)
+    doc.text(`${p.score}`, 18, y3 + 22)
+    doc.setFontSize(10)
+    doc.setTextColor(...GRAY)
+    doc.text('/ 100', 30, y3 + 22)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...DARK)
+    doc.text(status, 55, y3 + 22)
+
+    y3 += 30
+
+    // Findings — plain English for clients
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...DARK)
+    for (const f of p.findings.slice(0, 3)) {
+      if (y3 > H - 40) break
+      const symbol = p.score >= 80 ? '✓' : '→'
+      doc.text(`${symbol}  ${f}`, 18, y3)
+      y3 += 6
+    }
+    y3 += 8
+  }
+
+  // ── PAGE 4: Priority Actions + Disclaimer ────────────────────────────────────
+
+  newPage()
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(...NAVY)
+  doc.text('Your Priority Actions', 14, 22)
+  doc.setDrawColor(...LGRAY)
+  doc.line(14, 25, W - 14, 25)
+
+  const topRecs = sr?.recommendations
+    ? [...sr.recommendations]
+        .sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.priority] ?? 2) - ({ high: 0, medium: 1, low: 2 }[b.priority] ?? 2))
+        .slice(0, 5)
+    : []
+
+  let y4 = 32
+  if (topRecs.length === 0) {
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(10)
+    doc.setTextColor(...GRAY)
+    doc.text('No specific recommendations generated.', 14, y4)
+    y4 += 12
+  } else {
+    for (let i = 0; i < topRecs.length; i++) {
+      const rec = topRecs[i]
+      doc.setFillColor(37, 99, 235)
+      doc.circle(20, y4 + 1, 4, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(255, 255, 255)
+      doc.text(String(i + 1), 20, y4 + 2.5, { align: 'center' })
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(...DARK)
+      const lines = doc.splitTextToSize(rec.message, W - 40) as string[]
+      doc.text(lines, 28, y4 + 2)
+      y4 += lines.length * 5.5 + 6
+    }
+  }
+
+  // CTA
+  y4 += 4
+  doc.setFillColor(239, 246, 255)
+  doc.roundedRect(14, y4, W - 28, 24, 3, 3, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...NAVY)
+  doc.text('Next Step: Connect With Your Advisor', W / 2, y4 + 9, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...GRAY)
+  doc.text('A RedCube advisor will contact you within 1 business day to build your personalized plan.', W / 2, y4 + 17, { align: 'center' })
+
+  // Disclaimer
+  y4 += 32
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(7.5)
+  doc.setTextColor(156, 163, 175)
+  const dlines = doc.splitTextToSize(CLIENT_DISCLAIMER, W - 28) as string[]
+  doc.text(dlines, 14, y4)
+
+  return Buffer.from(doc.output('arraybuffer'))
+}
+
+// ── generateAdvisorPDF — 8-page professional report ───────────────────────────
+
+export async function generateAdvisorPDF(assessment: AssessmentForPDF): Promise<Buffer> {
+  const { jsPDF } = await import('jspdf')
+  const autoTable = (await import('jspdf-autotable')).default
+
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W    = doc.internal.pageSize.getWidth()
+  const H    = doc.internal.pageSize.getHeight()
+  const BLUE: [number, number, number]  = [37, 99, 235]
+  const NAVY: [number, number, number]  = [30, 58, 138]
+  const DARK: [number, number, number]  = [17, 24, 39]
+  const GRAY: [number, number, number]  = [107, 114, 128]
+  const LGRAY: [number, number, number] = [229, 231, 235]
+
+  const a       = assessment.answers
+  const sr      = assessment.scoreResults
+  const date    = new Date(assessment.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const pillars = computePillars(sr)
+  const overall = assessment.overallScore
+
+  const totalPages = 8
+
+  function footer(pageTitle: string) {
+    const pg = doc.getNumberOfPages()
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...GRAY)
+    doc.text(`RedCube Financial — Confidential Advisor Report — ${pageTitle}`, 14, H - 8)
+    doc.text(`${assessment.clientName}  |  Page ${pg} of ${totalPages}`, W - 14, H - 8, { align: 'right' })
+  }
+
+  function newPage(title: string) { doc.addPage(); footer(title) }
 
   function sectionHeader(text: string, y: number): number {
     doc.setFillColor(...BLUE)
     doc.rect(14, y, W - 28, 8, 'F')
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(9.5)
     doc.setTextColor(255, 255, 255)
-    doc.text(text.toUpperCase(), 17, y + 5.5)
-    return y + 13
+    doc.text(text.toUpperCase(), 18, y + 5.5)
+    return y + 12
   }
 
-  // ── PAGE 1: Cover ─────────────────────────────────────────────────────────
+  function productTable(products: ProductRow[], startY: number): number {
+    const rows = products.map(p => [p.name, p.status, p.rationale])
+    autoTable(doc, {
+      startY,
+      head: [['Product / Strategy', 'Recommendation', 'Rationale']],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3, lineColor: LGRAY, lineWidth: 0.2 },
+      headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 52, textColor: DARK },
+        1: { cellWidth: 30, halign: 'center', fontStyle: 'bold', textColor: DARK },
+        2: { textColor: GRAY },
+      },
+      margin: { left: 14, right: 14 },
+    })
+    return (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? startY + 80
+  }
 
-  doc.setFillColor(...BLUE)
-  doc.rect(0, 0, W, 80, 'F')
+  // ── PAGE 1: Cover ─────────────────────────────────────────────────────────────
+
+  doc.setFillColor(...NAVY)
+  doc.rect(0, 0, W, 90, 'F')
 
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(191, 219, 254)
-  doc.text('REDCUBE FINANCIAL', 14, 22)
+  doc.setFontSize(10)
+  doc.setTextColor(147, 197, 253)
+  doc.text('REDCUBE FINANCIAL — CONFIDENTIAL ADVISOR REPORT', 14, 20)
 
-  doc.setFontSize(26)
+  doc.setFontSize(22)
   doc.setTextColor(255, 255, 255)
-  doc.text('Client Financial', 14, 40)
-  doc.text('Assessment Report', 14, 52)
+  doc.text('Client Assessment Report', 14, 40)
 
-  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
   doc.setTextColor(191, 219, 254)
-  doc.text('CONFIDENTIAL — FOR ADVISOR USE ONLY', 14, 68)
+  doc.text('For licensed financial professional use only', 14, 54)
+  doc.text(`Assessment Date: ${date}`, 14, 62)
+  if (assessment.assessmentId) doc.text(`Assessment ID: ${assessment.assessmentId}`, 14, 70)
+  if (assessment.advisorName)  doc.text(`Prepared for: ${assessment.advisorName}`, 14, 78)
 
-  // Client info block
-  doc.setFillColor(249, 250, 251)
-  doc.roundedRect(14, 90, W - 28, 55, 4, 4, 'F')
-
+  // Client card
+  doc.setFillColor(248, 250, 252)
+  doc.roundedRect(14, 100, W - 28, 60, 4, 4, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
+  doc.setFontSize(18)
   doc.setTextColor(...DARK)
-  doc.text(assessment.clientName, 22, 106)
+  doc.text(assessment.clientName, 22, 118)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(...GRAY)
-  doc.text(`Email: ${assessment.clientEmail ?? 'Not provided'}`, 22, 117)
-  doc.text(`Date: ${date}`, 22, 126)
-  doc.text(`Risk Profile: ${assessment.riskProfile.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}`, 22, 135)
+  doc.text(`Email: ${assessment.clientEmail ?? '—'}`, 22, 128)
+  doc.text(`Risk Profile: ${capWords(assessment.riskProfile)}`, 22, 137)
+  doc.text(`Investment Horizon: ${capWords(String(a.investmentHorizon ?? '—'))}`, 22, 146)
 
-  // Overall score circle
   doc.setFillColor(...BLUE)
-  doc.circle(W - 35, 117, 20, 'F')
+  doc.circle(W - 35, 130, 22, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
+  doc.setFontSize(24)
   doc.setTextColor(255, 255, 255)
-  doc.text(String(assessment.overallScore), W - 35, 121, { align: 'center' })
+  doc.text(String(overall), W - 35, 135, { align: 'center' })
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('/ 100', W - 35, 128, { align: 'center' })
+  doc.text('/ 100', W - 35, 143, { align: 'center' })
+  doc.text('Overall', W - 35, 150, { align: 'center' })
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(...GRAY)
-  doc.text('Prepared by RedCube Financial', 14, H - 20)
-  doc.text('This report is confidential and intended for the named advisor only.', 14, H - 14)
+  footer('Cover')
 
-  // ── PAGE 2: Client Profile ────────────────────────────────────────────────
+  // ── PAGE 2: Client Profile ────────────────────────────────────────────────────
 
-  newPage()
+  newPage('Client Profile')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(...DARK)
-  doc.text('Client Profile', 14, 24)
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('Client Profile', 14, 20)
 
-  let y = 34
+  let y = 28
   y = sectionHeader('Personal Information', y)
 
+  const age = getAge(a.dob)
   const personalRows: [string, string][] = [
     ['Full Name',         assessment.clientName],
     ['Email',             assessment.clientEmail ?? '—'],
-    ['Date of Birth',     String(answers.dob ?? '—')],
-    ['Marital Status',    String(answers.maritalStatus ?? '—')],
-    ['Employment Status', String(answers.employmentStatus ?? '—')],
-    ['Occupation',        String(answers.occupation ?? '—')],
-    ['State',             String(answers.state ?? '—')],
-    ['Dependents',        String(answers.dependents ?? '—')],
+    ['Date of Birth',     String(a.dob ?? '—') + (age ? ` (Age ${age})` : '')],
+    ['Marital Status',    capWords(String(a.maritalStatus ?? '—'))],
+    ['Dependents',        String(a.dependents ?? '0')],
+    ['Employment Status', capWords(String(a.employmentStatus ?? '—'))],
+    ['Occupation',        String(a.occupation ?? '—')],
+    ['State',             String(a.state ?? '—')],
   ]
 
   autoTable(doc, {
-    startY: y,
-    body: personalRows,
-    theme: 'striped',
+    startY: y, body: personalRows, theme: 'striped',
+    styles: { fontSize: 9.5, cellPadding: 3.5 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, textColor: GRAY }, 1: { textColor: DARK } },
+    margin: { left: 14, right: 14 },
+  })
+
+  y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 50
+  y += 6
+  y = sectionHeader('Financial Overview', y)
+
+  const accounts = Array.isArray(a.retirementAccounts) ? (a.retirementAccounts as string[]).join(', ') : String(a.retirementAccounts ?? '—')
+  const financialRows: [string, string][] = [
+    ['Annual Gross Income',        fmt$(a.grossIncome)],
+    ['Spouse/Partner Income',      fmt$(a.spouseIncome)],
+    ['Other Income',               fmt$(a.otherIncome)],
+    ['Monthly Expenses',           fmt$(a.monthlyExpenses)],
+    ['Monthly Savings',            fmt$(a.monthlySavings)],
+    ['Emergency Fund',             `${String(a.emergencyFundMonths ?? '0')} months`],
+    ['Investable Assets',          fmt$(a.investableAssets)],
+    ['Current Retirement Savings', fmt$(a.currentRetirementSavings)],
+    ['Monthly Retirement Contrib', fmt$(a.monthlyRetirementContrib)],
+    ['Tax Bracket',                `${String(a.taxBracket ?? '—')}%`],
+    ['Filing Status',              capWords(String(a.filingStatus ?? '—'))],
+    ['Retirement Accounts',        accounts],
+    ['Home Ownership',             capWords(String(a.homeOwnership ?? '—'))],
+    ['Home Value',                 fmt$(a.homeValue)],
+    ['Mortgage Balance',           fmt$(a.mortgageBalance)],
+  ]
+
+  autoTable(doc, {
+    startY: y, body: financialRows, theme: 'striped',
+    styles: { fontSize: 9.5, cellPadding: 3.5 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70, textColor: GRAY }, 1: { textColor: DARK } },
+    margin: { left: 14, right: 14 },
+  })
+
+  // ── PAGE 3: Protection Analysis ───────────────────────────────────────────────
+
+  newPage('Protection Analysis')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('PILLAR 1 — PROTECT', 14, 20)
+
+  const rgb1 = scoreRGB(pillars.protect)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(28)
+  doc.setTextColor(...rgb1)
+  doc.text(`${pillars.protect}`, 14, 36)
+  doc.setFontSize(11)
+  doc.setTextColor(...GRAY)
+  doc.text('/ 100  —  ' + score2status(pillars.protect, ['Fully Protected', 'Partially Protected', 'Needs Protection']), 32, 36)
+
+  y = 44
+  y = sectionHeader('Coverage Gaps Identified', y)
+
+  const protectFindings = getProtectFindings(a)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.setTextColor(...DARK)
+  for (const f of protectFindings) {
+    doc.text(`• ${f}`, 18, y); y += 6
+  }
+  y += 6
+
+  y = sectionHeader('Recommended Protection Products', y)
+  const protectProds = getProtectProducts(a)
+  productTable(protectProds, y)
+
+  // ── PAGE 4: Growth Analysis ───────────────────────────────────────────────────
+
+  newPage('Growth Analysis')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('PILLAR 2 — GROW', 14, 20)
+
+  const rgb2 = scoreRGB(pillars.grow)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(28)
+  doc.setTextColor(...rgb2)
+  doc.text(`${pillars.grow}`, 14, 36)
+  doc.setFontSize(11)
+  doc.setTextColor(...GRAY)
+  doc.text('/ 100  —  ' + score2status(pillars.grow, ['Strong Growth', 'Moderate Growth', 'Growth Gap']), 32, 36)
+
+  y = 44
+  y = sectionHeader('Current Growth Assessment', y)
+  const growFindings = getGrowFindings(a)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.setTextColor(...DARK)
+  for (const f of growFindings) { doc.text(`• ${f}`, 18, y); y += 6 }
+  y += 4
+
+  y = sectionHeader('Retirement Projection (6% avg return)', y)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.setTextColor(...DARK)
+  const projLines = doc.splitTextToSize(retirementProjection(a), W - 32) as string[]
+  doc.text(projLines, 18, y)
+  y += projLines.length * 5.5 + 8
+
+  y = sectionHeader('Recommended Growth Products', y)
+  const growProds = getGrowProducts(a)
+  productTable(growProds, y)
+
+  // ── PAGE 5: Legacy Analysis ───────────────────────────────────────────────────
+
+  newPage('Legacy Analysis')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('PILLAR 3 — LEAVE A LEGACY', 14, 20)
+
+  const rgb3 = scoreRGB(pillars.legacy)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(28)
+  doc.setTextColor(...rgb3)
+  doc.text(`${pillars.legacy}`, 14, 36)
+  doc.setFontSize(11)
+  doc.setTextColor(...GRAY)
+  doc.text('/ 100  —  ' + score2status(pillars.legacy, ['Legacy Ready', 'Partial Legacy Plan', 'Legacy Gap']), 32, 36)
+
+  y = 44
+  y = sectionHeader('Estate Planning Checklist', y)
+
+  const estateChecks: [string, string][] = [
+    ['Last Will & Testament',   a.hasWill === 'yes'               ? '✓ In place'  : '✗ Missing'],
+    ['Living Trust',            a.hasTrust === 'yes'              ? '✓ In place'  : '✗ Not established'],
+    ['Power of Attorney',       a.hasPOA === 'yes'                ? '✓ In place'  : '✗ Missing'],
+    ['Healthcare Directive',    a.hasHealthcareDirective === 'yes' ? '✓ In place'  : '✗ Missing'],
+    ['Beneficiary Designations',a.hasBeneficiaries === 'yes'      ? '✓ Updated'   : '✗ May be outdated'],
+    ['Estate Attorney',         a.hasEstateAttorney === 'yes'     ? '✓ Retained'  : '✗ None on file'],
+    ['Last Estate Review',      String(a.lastReviewedEstate ?? 'Never')],
+    ['Estimated Estate Value',  fmt$(a.estateValue)],
+  ]
+
+  autoTable(doc, {
+    startY: y, body: estateChecks, theme: 'striped',
+    styles: { fontSize: 9.5, cellPadding: 3.5 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 65, textColor: GRAY }, 1: { textColor: DARK } },
+    margin: { left: 14, right: 14 },
+  })
+
+  y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 140
+  y += 8
+  y = sectionHeader('Recommended Legacy Products', y)
+  const legacyProds = getLegacyProducts(a)
+  productTable(legacyProds, y)
+
+  // ── PAGE 6: Priority Recommendations ─────────────────────────────────────────
+
+  newPage('Priority Recommendations')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('Priority Recommendations', 14, 20)
+
+  y = 28
+  const priorityRecs = getAdvisorPriorityRecs(a, sr)
+
+  for (let i = 0; i < priorityRecs.length; i++) {
+    if (y > H - 50) { newPage('Priority Recommendations (cont.)'); y = 20 }
+    const rec = priorityRecs[i]
+    const priorityColor: [number, number, number] = rec.priority === 'High' ? [239, 68, 68] : rec.priority === 'Medium' ? [245, 158, 11] : [107, 114, 128]
+
+    doc.setFillColor(...priorityColor)
+    doc.roundedRect(14, y, 18, 7, 2, 2, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(255, 255, 255)
+    doc.text(rec.priority.toUpperCase(), 23, y + 4.8, { align: 'center' })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(...DARK)
+    doc.text(`${i + 1}. ${rec.product}`, 36, y + 5)
+
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(...GRAY)
+    doc.text(rec.category, 36, y + 10)
+
+    y += 14
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(...DARK)
+    const ratLines = doc.splitTextToSize(rec.rationale, W - 30) as string[]
+    doc.text(ratLines, 18, y)
+    y += ratLines.length * 4.5 + 3
+
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8.5)
+    doc.setTextColor(22, 163, 74)
+    doc.text(`Impact: ${rec.impact}`, 18, y)
+    y += 10
+
+    doc.setDrawColor(...LGRAY)
+    doc.line(14, y, W - 14, y)
+    y += 6
+  }
+
+  // ── PAGE 7: Advisor Talking Points ────────────────────────────────────────────
+
+  newPage('Advisor Talking Points')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor(...NAVY)
+  doc.text('Advisor Talking Points & Next Steps', 14, 20)
+
+  y = 28
+  y = sectionHeader('Client\'s Stated Priorities', y)
+
+  const priority1 = capWords(String(a.topPriority1 ?? '—'))
+  const priority2 = capWords(String(a.topPriority2 ?? '—'))
+  const priority3 = capWords(String(a.topPriority3 ?? '—'))
+  const concern   = String(a.biggestConcern ?? '—')
+  const timeline  = capWords(String(a.timelineToStart ?? '—'))
+  const notes     = String(a.additionalNotes ?? '—')
+
+  const priorityTable: [string, string][] = [
+    ['Top Priority #1',   priority1],
+    ['Top Priority #2',   priority2],
+    ['Top Priority #3',   priority3],
+    ['Timeline to Start', timeline],
+  ]
+
+  autoTable(doc, {
+    startY: y, body: priorityTable, theme: 'striped',
     styles: { fontSize: 10, cellPadding: 4 },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, textColor: GRAY }, 1: { textColor: DARK } },
     margin: { left: 14, right: 14 },
   })
 
-  y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 60
+  y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 40
   y += 8
+  y = sectionHeader('Client\'s Biggest Concern', y)
 
-  y = sectionHeader('Financial Snapshot', y)
+  doc.setFillColor(239, 246, 255)
+  doc.roundedRect(14, y, W - 28, 16, 3, 3, 'F')
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(10)
+  doc.setTextColor(...NAVY)
+  const concernLines = doc.splitTextToSize(`"${concern}"`, W - 36) as string[]
+  doc.text(concernLines, 20, y + 8)
+  y += 22
 
-  const financialRows: [string, string][] = [
-    ['Annual Gross Income',         answers.grossIncome   ? `$${Number(answers.grossIncome).toLocaleString()}`   : '—'],
-    ['Monthly Expenses',            answers.monthlyExpenses ? `$${Number(answers.monthlyExpenses).toLocaleString()}` : '—'],
-    ['Monthly Savings',             answers.monthlySavings ? `$${Number(answers.monthlySavings).toLocaleString()}` : '—'],
-    ['Total Investable Assets',     answers.investableAssets ? `$${Number(answers.investableAssets).toLocaleString()}` : '—'],
-    ['Current Retirement Savings',  answers.currentRetirementSavings ? `$${Number(answers.currentRetirementSavings).toLocaleString()}` : '—'],
-    ['Emergency Fund Coverage',     String(answers.emergencyFundMonths ?? '—') + ' months'],
-    ['Tax Bracket',                 answers.taxBracket ? `${answers.taxBracket}%` : '—'],
+  y = sectionHeader('5 Conversation Starters', y)
+
+  const starters = [
+    `"${assessment.clientName.split(' ')[0]}, you mentioned your biggest concern is ${concern.toLowerCase()} — let's start by building a plan around that."`,
+    `"Your top priority is ${priority1.toLowerCase()} — here's exactly what we recommend as a first step."`,
+    `"You scored ${overall}/100 overall. The quickest wins are in ${pillars.protect < pillars.grow ? 'protection' : 'growth'} — let's tackle those first."`,
+    `"You mentioned you want to start ${timeline.toLowerCase()} — let's get something on paper today."`,
+    `"Based on your profile, there are ${priorityRecs.filter(r => r.priority === 'High').length} high-priority actions. Here's what I'd prioritize in the first 30 days."`,
   ]
 
-  autoTable(doc, {
-    startY: y,
-    body: financialRows,
-    theme: 'striped',
-    styles: { fontSize: 10, cellPadding: 4 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 75, textColor: GRAY }, 1: { textColor: DARK } },
-    margin: { left: 14, right: 14 },
-  })
-
-  // ── PAGE 3: Three Pillars Scorecard ──────────────────────────────────────
-
-  newPage()
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
   doc.setTextColor(...DARK)
-  doc.text('Three Pillars Scorecard', 14, 24)
+  for (let i = 0; i < starters.length; i++) {
+    if (y > H - 50) { newPage('Advisor Talking Points (cont.)'); y = 20 }
+    const lines = doc.splitTextToSize(`${i + 1}. ${starters[i]}`, W - 30) as string[]
+    doc.text(lines, 18, y)
+    y += lines.length * 5.5 + 4
+  }
 
-  const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)))
-  const protect = sr ? clamp((sr.sub_scores.insurance + sr.sub_scores.estate) / 2) : 0
-  const grow    = sr ? clamp((sr.sub_scores.investments + sr.sub_scores.retirement + sr.sub_scores.cashflow + sr.sub_scores.tax) / 4) : 0
-  const legacy  = sr ? clamp(sr.sub_scores.estate) : 0
-
-  const pillars: PillarData[] = [
-    { name: 'PROTECT',        score: protect, status: score2status(protect, ['Fully Protected', 'Partially Protected', 'Needs Protection']), findings: getProtectFindings(answers) },
-    { name: 'GROW',           score: grow,    status: score2status(grow,    ['Strong Growth',   'Moderate Growth',     'Growth Gap']),        findings: getGrowFindings(answers) },
-    { name: 'LEAVE A LEGACY', score: legacy,  status: score2status(legacy,  ['Legacy Ready',    'Partial Legacy Plan', 'Legacy Gap']),         findings: getLegacyFindings(answers) },
-  ]
-
-  y = 34
-  for (const pillar of pillars) {
-    const rgb = scoreRGB(pillar.score)
-    y = sectionHeader(pillar.name, y)
-
-    // Score row
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(28)
-    doc.setTextColor(...rgb)
-    doc.text(`${pillar.score}`, 14, y + 8)
-
-    doc.setFontSize(11)
-    doc.setTextColor(...GRAY)
-    doc.text('/ 100', 30, y + 8)
-
-    doc.setFontSize(10)
-    doc.setTextColor(...DARK)
-    doc.text(`Status: ${pillar.status}`, 60, y + 8)
-
-    y += 16
-
-    // Findings
+  if (notes && notes !== '—') {
+    y += 4
+    y = sectionHeader('Client Additional Notes', y)
+    const nlines = doc.splitTextToSize(notes, W - 28) as string[]
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(...GRAY)
-    for (const finding of pillar.findings) {
-      doc.text(`• ${finding}`, 18, y)
-      y += 6
-    }
-    y += 8
-  }
-
-  // Sub-score table
-  if (sr) {
-    y = sectionHeader('Sub-Score Breakdown', y)
-    const subRows = Object.entries(sr.sub_scores).map(([k, v]) => [k.charAt(0).toUpperCase() + k.slice(1), `${v}/100`])
-    autoTable(doc, {
-      startY: y,
-      head: [['Category', 'Score']],
-      body: subRows,
-      theme: 'grid',
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: { fillColor: BLUE, textColor: [255, 255, 255], fontStyle: 'bold' },
-      margin: { left: 14, right: 14 },
-    })
-  }
-
-  // ── PAGE 4: Detailed Findings ─────────────────────────────────────────────
-
-  newPage()
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(...DARK)
-  doc.text('Detailed Findings', 14, 24)
-
-  y = 34
-  const sections = [
-    { name: 'Protection & Insurance', findings: getProtectFindings(answers) },
-    { name: 'Growth & Retirement',    findings: getGrowFindings(answers) },
-    { name: 'Legacy Planning',         findings: getLegacyFindings(answers) },
-  ]
-
-  for (const sec of sections) {
-    y = sectionHeader(sec.name, y)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
+    doc.setFontSize(9.5)
     doc.setTextColor(...DARK)
-    for (const finding of sec.findings) {
-      doc.text(`• ${finding}`, 18, y)
-      y += 7
-    }
-    y += 6
-    if (y > H - 40) { newPage(); y = 20 }
+    doc.text(nlines, 14, y)
   }
 
-  // ── PAGE 5: Recommendations ──────────────────────────────────────────────
+  // ── PAGE 8: Regulatory Disclaimer ─────────────────────────────────────────────
 
-  newPage()
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(...DARK)
-  doc.text('Recommendations', 14, 24)
-
-  const recs = getProductRecs(answers)
-  const recRows = recs.map((r, i) => [`${i + 1}. ${r.title}`, r.explanation, r.priority])
-
-  autoTable(doc, {
-    startY: 34,
-    head: [['Strategy / Product', 'Rationale', 'Priority']],
-    body: recRows,
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 5, lineColor: [229, 231, 235], lineWidth: 0.3 },
-    headStyles: { fillColor: BLUE, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 70, textColor: DARK },
-      1: { cellWidth: 90, textColor: GRAY },
-      2: { cellWidth: 22, halign: 'center', textColor: DARK },
-    },
-    margin: { left: 14, right: 14 },
-  })
-
-  // Priority recommendations from scoring engine
-  if (sr?.recommendations.length) {
-    y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 100
-    y += 10
-    y = sectionHeader('Scoring Engine Recommendations', y)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(...DARK)
-    const sorted = [...sr.recommendations].sort((a, b) => {
-      const ord: Record<string, number> = { high: 0, medium: 1, low: 2 }
-      return (ord[a.priority] ?? 2) - (ord[b.priority] ?? 2)
-    }).slice(0, 6)
-    for (const rec of sorted) {
-      if (y > H - 30) { newPage(); y = 20 }
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.setTextColor(...DARK)
-      doc.text(`[${rec.priority.toUpperCase()}] ${rec.category}`, 18, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(...GRAY)
-      const lines = doc.splitTextToSize(rec.message, W - 40) as string[]
-      doc.text(lines, 18, y)
-      y += lines.length * 5 + 5
-    }
-  }
-
-  // ── PAGE 6: Disclaimer ────────────────────────────────────────────────────
-
-  newPage()
+  newPage('Regulatory Disclaimer')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(14)
   doc.setTextColor(...DARK)
-  doc.text('Regulatory Disclaimer', 14, 24)
+  doc.text('Regulatory Disclaimer', 14, 22)
 
-  const disclaimerText = 'This financial assessment report is prepared by RedCube Financial and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. Fixed Indexed Annuities (FIAs) and Indexed Universal Life (IUL) policies are insurance products, not securities, and are not FDIC insured. Securities, when applicable, are offered through registered broker-dealers and are subject to FINRA and SEC regulations. RedCube Financial advisors may be licensed insurance agents and/or registered investment advisors. This report does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions. RedCube Financial is not responsible for actions taken based on this report without professional consultation.'
+  doc.setDrawColor(...LGRAY)
+  doc.line(14, 26, W - 14, 26)
 
-  const dlines = doc.splitTextToSize(disclaimerText, W - 28) as string[]
+  const dlines = doc.splitTextToSize(ADVISOR_DISCLAIMER, W - 28) as string[]
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
+  doc.setFontSize(8.5)
   doc.setTextColor(...GRAY)
-  doc.text(dlines, 14, 38)
+  doc.text(dlines, 14, 34)
 
-  y = 38 + dlines.length * 4.5 + 12
+  const endY = 34 + dlines.length * 4.2 + 14
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(...DARK)
-  doc.text('RedCube Financial', 14, y)
+  doc.text('RedCube Financial LLC', 14, endY)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...GRAY)
-  doc.text('contact@redcubefinancial.com', 14, y + 7)
-  doc.text('www.redcubefinancial.com', 14, y + 13)
+  doc.text('contact@redcubefinancial.com', 14, endY + 7)
+  doc.text('www.redcubefinancial.com', 14, endY + 13)
+  doc.text(`Report generated: ${date}`, 14, endY + 19)
 
-  // ── Return as Buffer ──────────────────────────────────────────────────────
+  return Buffer.from(doc.output('arraybuffer'))
+}
 
-  const arrayBuffer = doc.output('arraybuffer')
-  return Buffer.from(arrayBuffer)
+// ── Legacy export: keep old name working for backward compatibility ─────────────
+
+export async function generateAssessmentPDF(assessment: AssessmentForPDF): Promise<Buffer> {
+  return generateAdvisorPDF(assessment)
 }

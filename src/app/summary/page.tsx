@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Shield, TrendingUp, Heart, ArrowRight, CheckCircle, AlertCircle, Download } from 'lucide-react'
+import { Shield, TrendingUp, Heart, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { ScoreResults } from '@/lib/scoring'
+import { DownloadButton } from './DownloadButton'
+import { AdvisorSelector } from './AdvisorSelector'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -371,6 +373,9 @@ export default async function SummaryPage({
           </section>
         )}
 
+        {/* ── Advisor Selector ─────────────────────────────────────────────── */}
+        <AdvisorSelector assessmentId={row.id} />
+
         {/* ── CTA Section ─────────────────────────────────────────────────── */}
         <section className="bg-brand-600 rounded-2xl p-8 text-center">
           <h2 className="font-heading text-2xl font-bold text-white mb-2">
@@ -386,11 +391,7 @@ export default async function SummaryPage({
             >
               Go to My Dashboard <ArrowRight className="w-4 h-4" />
             </Link>
-            <button
-              className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-brand-700 hover:bg-brand-800 transition-colors text-white font-semibold text-sm rounded-xl border border-brand-500"
-            >
-              <Download className="w-4 h-4" /> Download PDF Summary
-            </button>
+            <DownloadButton assessmentId={row.id} />
           </div>
           <p className="text-[11px] text-brand-200 mt-4">
             No obligation. Licensed advisors. SEC &amp; FINRA compliant.

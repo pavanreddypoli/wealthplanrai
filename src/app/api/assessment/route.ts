@@ -256,6 +256,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fire-and-forget: generate PDF and email advisor (non-blocking)
+    const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/assessment/send-report`
+    fetch(reportUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ assessmentId: assessment.id }),
+    }).catch(err => console.error('[send-report fire-and-forget]:', err))
+
     return NextResponse.json({ id: assessment.id, risk_profile, score: score_results.overall_score })
 
   } catch (err) {

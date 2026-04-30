@@ -243,7 +243,7 @@ export default function AssessmentPage() {
         body:JSON.stringify({answers:data,score:75,risk_profile:data.riskTolerance||'moderate'}),
       })
       const json = await res.json()
-      if (json.id) router.push(`/results?id=${json.id}`)
+      if (json.id) router.push(`/summary?id=${json.id}`)
       else setDone(true)
     } catch {
       setApiError("Something went sideways on our end — your answers are safe, please try submitting again")

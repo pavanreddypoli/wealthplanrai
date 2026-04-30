@@ -306,7 +306,7 @@ async function ResultsContent({ id }: { id: string }) {
 
       {/* ── Section 6: CTA ──────────────────────────────────────────── */}
       <section className="bg-brand-600 rounded-2xl p-8 text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">Ready to take action?</h2>
+        <h2 className="font-heading text-2xl font-bold text-white mb-2">Ready to take action?</h2>
         <p className="text-brand-100 text-sm mb-6 max-w-md mx-auto">
           Schedule a free 30-minute call with a RedCube advisor to build your personalized financial plan.
         </p>
@@ -366,7 +366,7 @@ export default async function ResultsPage({
 
         {/* Page title */}
         <div className="mb-7">
-          <h1 className="text-2xl font-bold text-gray-900">Your Financial Health Report</h1>
+          <h1 className="font-heading text-2xl font-bold text-gray-900">Your Financial Health Report</h1>
           <p className="text-gray-500 mt-1 text-sm">
             A comprehensive snapshot of your financial wellbeing across six dimensions.
           </p>

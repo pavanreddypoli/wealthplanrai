@@ -37,8 +37,12 @@ export default function LoginPage() {
         if (error) throw error
         setError('Check your email to confirm your account.')
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+    } catch {
+      if (mode === 'signin') {
+        setError("We didn't recognize those credentials — double-check your email and password and try again")
+      } else {
+        setError("We hit a small snag creating your account — please try again or contact support")
+      }
     } finally {
       setLoading(false)
     }
@@ -55,7 +59,7 @@ export default function LoginPage() {
       </Link>
 
       <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">
+        <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">
           {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
         </h1>
         <p className="text-sm text-gray-500 mb-6">

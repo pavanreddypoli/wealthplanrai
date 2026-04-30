@@ -125,7 +125,7 @@ function OpportunityCell({ score }: { score: number }) {
 // ── Notes panel ───────────────────────────────────────────────────────────────
 
 function NotesPanel({
-  panel, notes, loading, saving,
+  panel, notes, loading, saving, saveError,
   noteTitle, noteBody, noteTags,
   onTitleChange, onBodyChange, onTagsChange,
   onSave, onClose,
@@ -140,6 +140,7 @@ function NotesPanel({
   onTitleChange: (v: string) => void
   onBodyChange: (v: string) => void
   onTagsChange: (v: string) => void
+  saveError: string
   onSave: () => void
   onClose: () => void
 }) {
@@ -229,6 +230,11 @@ function NotesPanel({
             placeholder="Tags: retirement, urgent..."
             className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white outline-none focus:border-brand-400 transition-colors placeholder:text-gray-400"
           />
+          {saveError && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
           <button
             onClick={onSave}
             disabled={saving || !noteBody.trim()}
@@ -259,6 +265,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
   const [noteBody, setNoteBody]   = useState('')
   const [noteTags, setNoteTags]   = useState('')
   const [saving, setSaving]       = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Derived
   const filtered = useMemo(() => {
@@ -299,12 +306,12 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
   const closePanel = useCallback(() => {
     setPanel(null)
     setNotes([])
-    setNoteTitle(''); setNoteBody(''); setNoteTags('')
+    setNoteTitle(''); setNoteBody(''); setNoteTags(''); setSaveError('')
   }, [])
 
   const saveNote = useCallback(async () => {
     if (!panel || !noteBody.trim()) return
-    setSaving(true)
+    setSaving(true); setSaveError('')
     try {
       const tags = noteTags.split(',').map(t => t.trim()).filter(Boolean)
       const res  = await fetch('/api/notes', {
@@ -322,7 +329,11 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
         const refreshData = await refreshRes.json()
         setNotes(Array.isArray(refreshData) ? refreshData : [])
         setNoteTitle(''); setNoteBody(''); setNoteTags('')
+      } else {
+        setSaveError("We couldn't save that note right now — please try again in a moment")
       }
+    } catch {
+      setSaveError("We couldn't save that note right now — please try again in a moment")
     } finally { setSaving(false) }
   }, [panel, noteTitle, noteBody, noteTags])
 
@@ -336,7 +347,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
     <>
       {/* ── Topbar ───────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between flex-shrink-0 sticky top-0 z-10">
-        <h1 className="text-base font-semibold text-gray-900">Client Assessments</h1>
+        <h1 className="font-heading text-base font-semibold text-gray-900">Client Assessments</h1>
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
@@ -550,6 +561,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
           notes={notes}
           loading={notesLoading}
           saving={saving}
+          saveError={saveError}
           noteTitle={noteTitle}
           noteBody={noteBody}
           noteTags={noteTags}

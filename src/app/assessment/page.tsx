@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface FormData {
   firstName: string; lastName: string; email: string; phone: string
@@ -56,15 +57,15 @@ const INIT: FormData = {
 }
 
 const STEPS = [
-  { id:'personal',    label:'Personal',    icon:'👤', color:'#e11d48' },
-  { id:'cashflow',    label:'Cash Flow',   icon:'💵', color:'#0284c7' },
-  { id:'protection',  label:'Protection',  icon:'🛡️', color:'#7c3aed' },
-  { id:'retirement',  label:'Retirement',  icon:'🏖️', color:'#059669' },
-  { id:'investments', label:'Investments', icon:'📈', color:'#d97706' },
-  { id:'mortgage',    label:'Mortgage',    icon:'🏠', color:'#0891b2' },
-  { id:'tax',         label:'Tax',         icon:'🧾', color:'#65a30d' },
-  { id:'estate',      label:'Estate',      icon:'📋', color:'#9333ea' },
-  { id:'priorities',  label:'Priorities',  icon:'🎯', color:'#e11d48' },
+  { id:'personal',    label:'Personal',    icon:'👤' },
+  { id:'cashflow',    label:'Cash Flow',   icon:'💵' },
+  { id:'protection',  label:'Protection',  icon:'🛡️' },
+  { id:'retirement',  label:'Retirement',  icon:'🏖️' },
+  { id:'investments', label:'Investments', icon:'📈' },
+  { id:'mortgage',    label:'Mortgage',    icon:'🏠' },
+  { id:'tax',         label:'Tax',         icon:'🧾' },
+  { id:'estate',      label:'Estate',      icon:'📋' },
+  { id:'priorities',  label:'Priorities',  icon:'🎯' },
 ]
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
@@ -72,25 +73,25 @@ const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','
 function validate(step: number, d: FormData): string[] {
   const e: string[] = []
   if (step === 0) {
-    if (!d.firstName.trim()) e.push('First name is required')
-    if (!d.lastName.trim())  e.push('Last name is required')
-    if (!d.email.includes('@')) e.push('Valid email is required')
-    if (!d.dob)              e.push('Date of birth is required')
-    if (!d.maritalStatus)    e.push('Marital status is required')
-    if (!d.employmentStatus) e.push('Employment status is required')
+    if (!d.firstName.trim()) e.push("We'd love to know your name — please add your first name so we can personalize your plan")
+    if (!d.lastName.trim())  e.push("Almost there! Please add your last name to continue")
+    if (!d.email.includes('@')) e.push("We'll send your results here — please enter a valid email address")
+    if (!d.dob)              e.push("Your age helps us tailor your retirement timeline — please add your date of birth")
+    if (!d.maritalStatus)    e.push("Your household situation helps us give more accurate advice — please select your marital status")
+    if (!d.employmentStatus) e.push("Understanding your work situation helps us build a better plan — please select your employment status")
   }
   if (step === 1) {
-    if (!d.grossIncome)     e.push('Annual income is required')
-    if (!d.monthlyExpenses) e.push('Monthly expenses are required')
+    if (!d.grossIncome)     e.push("We understand sharing financials feels personal — your income helps us recommend the right strategies for your situation")
+    if (!d.monthlyExpenses) e.push("Your spending picture helps us find savings opportunities — please add your monthly expenses")
   }
   if (step === 4) {
-    if (!d.riskTolerance)    e.push('Risk tolerance is required')
-    if (!d.investmentHorizon) e.push('Investment horizon is required')
+    if (!d.riskTolerance)     e.push("This shapes your entire investment strategy — please select how you feel about investment risk")
+    if (!d.investmentHorizon) e.push("Knowing your timeline helps us match the right approach — please select your investment horizon")
   }
   if (step === 8) {
-    if (!d.topPriority1)   e.push('Please select your top priority')
-    if (!d.biggestConcern) e.push('Please describe your biggest concern')
-    if (!d.timelineToStart) e.push('Please select a timeline')
+    if (!d.topPriority1)    e.push("Help us focus on what matters most to you — please choose your top financial priority")
+    if (!d.biggestConcern)  e.push("Your concerns help us prepare your advisor — please share what's on your mind financially")
+    if (!d.timelineToStart) e.push("Knowing when you'd like to start helps us prioritize — please select a timeline")
   }
   return e
 }
@@ -100,11 +101,11 @@ function validate(step: number, d: FormData): string[] {
 function F({ label, req, hint, children }: { label:string; req?:boolean; hint?:string; children:React.ReactNode }) {
   return (
     <div className="mb-[18px]">
-      <label className="block text-[13px] font-medium text-[#333] mb-1.5">
-        {label}{req && <span className="text-[#e11d48]"> *</span>}
+      <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+        {label}{req && <span className="text-red-500"> *</span>}
       </label>
       {children}
-      {hint && <p className="text-[11px] text-[#bbb] mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
     </div>
   )
 }
@@ -112,13 +113,13 @@ function F({ label, req, hint, children }: { label:string; req?:boolean; hint?:s
 function TI({ val, set, ph, type='text', pre }: { val:string; set:(v:string)=>void; ph?:string; type?:string; pre?:string }) {
   return (
     <div className="relative flex items-center">
-      {pre && <span className="absolute left-3 text-[13px] text-[#888] pointer-events-none">{pre}</span>}
+      {pre && <span className="absolute left-3 text-[13px] text-gray-400 pointer-events-none">{pre}</span>}
       <input
         type={type}
         value={val}
         onChange={e=>set(e.target.value)}
         placeholder={ph}
-        className={`w-full h-[42px] border-[1.5px] border-[#e0e0e0] rounded-lg text-sm text-[#1a1a1a] bg-[#fafafa] outline-none transition-colors duration-150 focus:border-[#e11d48] focus:bg-white ${pre ? 'pl-6 pr-3.5' : 'px-3.5'}`}
+        className={`w-full h-[42px] border-[1.5px] border-gray-200 rounded-lg text-sm text-gray-900 bg-gray-50 outline-none transition-colors duration-150 focus:border-brand-400 focus:bg-white ${pre ? 'pl-6 pr-3.5' : 'px-3.5'}`}
       />
     </div>
   )
@@ -129,7 +130,7 @@ function Sel({ val, set, opts, ph }: { val:string; set:(v:string)=>void; opts:{v
     <select
       value={val}
       onChange={e=>set(e.target.value)}
-      className="w-full h-[42px] border-[1.5px] border-[#e0e0e0] rounded-lg px-3.5 text-sm text-[#1a1a1a] bg-[#fafafa] outline-none cursor-pointer transition-colors duration-150 appearance-none focus:border-[#e11d48]"
+      className="w-full h-[42px] border-[1.5px] border-gray-200 rounded-lg px-3.5 text-sm text-gray-900 bg-gray-50 outline-none cursor-pointer transition-colors duration-150 appearance-none focus:border-brand-400 focus:bg-white"
     >
       {ph && <option value="">{ph}</option>}
       {opts.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
@@ -145,8 +146,8 @@ function Radio({ val, set, opts }: { val:string; set:(v:string)=>void; opts:{val
           key={o.value}
           className={`flex items-center px-3.5 py-2 rounded-lg border-[1.5px] text-[13px] font-medium cursor-pointer transition-all duration-150 select-none ${
             val === o.value
-              ? 'border-[#e11d48] bg-[#fff1f3] text-[#e11d48]'
-              : 'border-[#e0e0e0] text-[#555] hover:border-[#e11d48] hover:text-[#e11d48]'
+              ? 'border-brand-600 bg-blue-50 text-brand-600'
+              : 'border-gray-200 text-gray-500 hover:border-brand-400 hover:text-brand-600'
           }`}
         >
           <input type="radio" value={o.value} checked={val===o.value} onChange={()=>set(o.value)} className="hidden" />
@@ -166,8 +167,8 @@ function Check({ vals, set, opts }: { vals:string[]; set:(v:string[])=>void; opt
           key={o.value}
           className={`flex items-center px-3.5 py-2 rounded-lg border-[1.5px] text-[13px] font-medium cursor-pointer transition-all duration-150 select-none ${
             vals.includes(o.value)
-              ? 'border-[#e11d48] bg-[#fff1f3] text-[#e11d48]'
-              : 'border-[#e0e0e0] text-[#555] hover:border-[#e11d48] hover:text-[#e11d48]'
+              ? 'border-brand-600 bg-blue-50 text-brand-600'
+              : 'border-gray-200 text-gray-500 hover:border-brand-400 hover:text-brand-600'
           }`}
           onClick={()=>toggle(o.value)}
         >
@@ -187,28 +188,42 @@ function G2({ children }: { children:React.ReactNode }) {
 
 function SecHead({ icon, title, sub }: { icon:string; title:string; sub:string }) {
   return (
-    <div className="flex items-start gap-3.5 mb-7 pb-5 border-b border-[#f0f0f0]">
+    <div className="flex items-start gap-3.5 mb-7 pb-5 border-b border-gray-100">
       <span className="text-[28px] leading-none shrink-0 mt-0.5">{icon}</span>
       <div>
-        <h2 className="text-xl font-bold text-[#0a0a0a] mb-1">{title}</h2>
-        <p className="text-[13px] text-[#888] leading-relaxed">{sub}</p>
+        <h2 className="font-heading text-xl font-bold text-gray-900 mb-1">{title}</h2>
+        <p className="text-[13px] text-gray-500 leading-relaxed">{sub}</p>
       </div>
     </div>
+  )
+}
+
+// ── Logo ──────────────────────────────────────────────────────────────────────
+
+function Logo() {
+  return (
+    <Link href="/" className="flex items-center gap-2">
+      <span className="text-brand-600 text-lg font-bold leading-none">■</span>
+      <span className="text-[15px] text-gray-900 font-semibold">
+        RedCube <span className="text-brand-600">WealthOS</span>
+      </span>
+    </Link>
   )
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AssessmentPage() {
-  const [step,setStep]       = useState(0)
-  const [data,setData]       = useState<FormData>(INIT)
-  const [errs,setErrs]       = useState<string[]>([])
-  const [loading,setLoading] = useState(false)
-  const [done,setDone]       = useState(false)
+  const [step,setStep]         = useState(0)
+  const [data,setData]         = useState<FormData>(INIT)
+  const [errs,setErrs]         = useState<string[]>([])
+  const [apiError,setApiError] = useState('')
+  const [loading,setLoading]   = useState(false)
+  const [done,setDone]         = useState(false)
   const router = useRouter()
 
   const s = useCallback(<K extends keyof FormData>(k:K,v:FormData[K]) => {
-    setData(p=>({...p,[k]:v})); setErrs([])
+    setData(p=>({...p,[k]:v})); setErrs([]); setApiError('')
   },[])
 
   function goNext() {
@@ -216,12 +231,12 @@ export default function AssessmentPage() {
     if (e.length) { setErrs(e); window.scrollTo(0,0); return }
     setErrs([]); setStep(n=>n+1); window.scrollTo(0,0)
   }
-  function goBack() { setErrs([]); setStep(n=>n-1); window.scrollTo(0,0) }
+  function goBack() { setErrs([]); setApiError(''); setStep(n=>n-1); window.scrollTo(0,0) }
 
   async function submit() {
     const e = validate(step,data)
     if (e.length) { setErrs(e); return }
-    setLoading(true)
+    setLoading(true); setApiError('')
     try {
       const res = await fetch('/api/assessment',{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -230,25 +245,28 @@ export default function AssessmentPage() {
       const json = await res.json()
       if (json.id) router.push(`/results?id=${json.id}`)
       else setDone(true)
-    } catch { setDone(true) } finally { setLoading(false) }
+    } catch {
+      setApiError("Something went sideways on our end — your answers are safe, please try submitting again")
+    } finally { setLoading(false) }
   }
 
   const pct = ((step+1)/STEPS.length)*100
-  const cur = STEPS[step]
+
+  // ── Done screen ────────────────────────────────────────────────────────────
 
   if (done) return (
-    <div className="min-h-screen bg-[#f7f7f5] pb-16">
-      <header className="bg-[#0a0a0a] px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[15px] text-white font-semibold">
-          <span className="text-[#e11d48] text-lg">■</span>RedCube <b className="text-[#e11d48]">WealthOS</b>
-        </div>
+    <div className="min-h-screen bg-[#F8FAFC] pb-16">
+      <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center">
+        <Logo />
       </header>
-      <div className="max-w-[440px] mx-auto mt-20 text-center px-10 py-12 bg-white rounded-[20px] border border-[#e8e8e8]">
-        <div className="w-[68px] h-[68px] rounded-full bg-[#f0fdf4] text-[#059669] text-[30px] flex items-center justify-center mx-auto mb-5 border-2 border-[#bbf7d0]">✓</div>
-        <h2 className="text-[22px] font-bold mb-2.5">Assessment Complete!</h2>
-        <p className="text-sm text-[#666] leading-[1.7] mb-7">Thank you, {data.firstName}. Your advisor will review your responses and be in touch within 1 business day.</p>
+      <div className="max-w-[440px] mx-auto mt-20 text-center px-10 py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
+        <div className="w-[68px] h-[68px] rounded-full bg-green-50 border-2 border-green-200 text-green-600 text-[30px] flex items-center justify-center mx-auto mb-5">✓</div>
+        <h2 className="font-heading text-[22px] font-bold text-gray-900 mb-2.5">Assessment Complete!</h2>
+        <p className="text-sm text-gray-500 leading-[1.7] mb-7">
+          Thank you, {data.firstName}. Your advisor will review your responses and be in touch within 1 business day.
+        </p>
         <button
-          className="px-6 py-2.5 rounded-lg bg-[#e11d48] text-sm font-semibold text-white cursor-pointer transition-colors duration-150 hover:bg-[#be123c]"
+          className="px-6 py-2.5 rounded-lg bg-brand-600 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
           onClick={()=>router.push('/dashboard')}
         >
           Go to Dashboard →
@@ -257,20 +275,22 @@ export default function AssessmentPage() {
     </div>
   )
 
-  return (
-    <div className="min-h-screen bg-[#f7f7f5] pb-16">
+  // ── Main form ──────────────────────────────────────────────────────────────
 
-      <header className="bg-[#0a0a0a] px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[15px] text-white font-semibold">
-          <span className="text-[#e11d48] text-lg">■</span>RedCube <b className="text-[#e11d48]">WealthOS</b>
-        </div>
-        <span className="text-[11px] text-[#555] tracking-[1.2px] uppercase">Wealth Assessment</span>
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] pb-16">
+
+      <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between sticky top-0 z-20">
+        <Logo />
+        <span className="text-[11px] text-gray-400 tracking-[1.2px] uppercase">Wealth Assessment</span>
       </header>
 
-      <div className="h-[3px] bg-[#e5e5e5]">
-        <div className="h-full transition-all duration-500 ease-in-out" style={{width:`${pct}%`,background:cur.color}} />
+      {/* Progress bar */}
+      <div className="h-[3px] bg-gray-100">
+        <div className="h-full bg-brand-600 transition-all duration-500 ease-in-out" style={{width:`${pct}%`}} />
       </div>
 
+      {/* Step pills */}
       <div className="overflow-x-auto px-5 pt-4 pb-0">
         <div className="flex gap-2 min-w-max">
           {STEPS.map((st,i)=>(
@@ -278,12 +298,11 @@ export default function AssessmentPage() {
               key={st.id}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-[1.5px] bg-white text-xs whitespace-nowrap transition-all duration-150 ${
                 i < step
-                  ? 'border-[#d1fae5] text-[#059669] bg-[#f0fdf4] cursor-pointer'
+                  ? 'border-green-200 text-green-600 bg-green-50 cursor-pointer'
                   : i === step
-                    ? 'font-semibold bg-[#fff8f9]'
-                    : 'border-[#e0e0e0] text-[#aaa] cursor-default'
+                    ? 'border-brand-600 text-brand-600 bg-blue-50 font-semibold'
+                    : 'border-gray-200 text-gray-400 cursor-default'
               }`}
-              style={i===step ? {borderColor:st.color,color:st.color} : {}}
               onClick={()=>{if(i<step){setStep(i);setErrs([])}}}
               disabled={i>step}
             >
@@ -294,14 +313,40 @@ export default function AssessmentPage() {
         </div>
       </div>
 
+      {/* Form card */}
       <div
         key={step}
-        className="max-w-[700px] mx-auto mt-5 md:mx-auto mx-3 bg-white rounded-2xl border border-[#e8e8e8] p-8 max-md:p-5 max-md:rounded-xl animate-slide-up"
+        className="max-w-[700px] md:mx-auto mx-3 mt-5 bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-md:p-5 max-md:rounded-xl animate-slide-up"
       >
 
+        {/* Validation errors */}
         {errs.length>0 && (
-          <div className="bg-[#fff1f3] border border-[#fecdd3] rounded-[10px] px-4 py-3.5 mb-6 text-[13px] text-[#be123c] flex flex-col gap-1">
-            {errs.map(e=><div key={e}>⚠ {e}</div>)}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 mb-6 text-[13px] text-amber-800">
+            <p className="font-semibold mb-2">We want to make sure we get this right — please check the following before continuing:</p>
+            <ul className="space-y-1 mt-1">
+              {errs.map(e=>(
+                <li key={e} className="flex items-start gap-2">
+                  <span className="mt-0.5 flex-shrink-0">•</span>
+                  <span>{e}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* API error */}
+        {apiError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 mb-6 text-[13px] text-amber-800">
+            {apiError}
+          </div>
+        )}
+
+        {/* Step 0 welcome banner */}
+        {step===0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3.5 mb-6">
+            <p className="text-[13px] text-blue-700 leading-relaxed">
+              <strong>We understand your time is precious.</strong> The more accurately you complete this assessment, the more precisely we can tailor advice to your unique financial situation. Most advisors find this takes about 8 minutes.
+            </p>
           </div>
         )}
 
@@ -584,7 +629,7 @@ export default function AssessmentPage() {
               value={data.biggestConcern}
               onChange={e=>s('biggestConcern',e.target.value)}
               placeholder="e.g. I worry about outliving my savings and not being able to retire comfortably..."
-              className="w-full border-[1.5px] border-[#e0e0e0] rounded-lg px-3.5 py-3 text-sm text-[#1a1a1a] bg-[#fafafa] outline-none resize-y transition-colors duration-150 leading-relaxed focus:border-[#e11d48] focus:bg-white"
+              className="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-3 text-sm text-gray-900 bg-gray-50 outline-none resize-y transition-colors duration-150 leading-relaxed focus:border-brand-400 focus:bg-white"
               rows={4}
             />
           </F>
@@ -601,35 +646,35 @@ export default function AssessmentPage() {
               value={data.additionalNotes}
               onChange={e=>s('additionalNotes',e.target.value)}
               placeholder="Any additional context, goals, or concerns..."
-              className="w-full border-[1.5px] border-[#e0e0e0] rounded-lg px-3.5 py-3 text-sm text-[#1a1a1a] bg-[#fafafa] outline-none resize-y transition-colors duration-150 leading-relaxed focus:border-[#e11d48] focus:bg-white"
+              className="w-full border-[1.5px] border-gray-200 rounded-lg px-3.5 py-3 text-sm text-gray-900 bg-gray-50 outline-none resize-y transition-colors duration-150 leading-relaxed focus:border-brand-400 focus:bg-white"
               rows={3}
             />
           </F>
-          <div className="bg-[#fffbeb] border border-[#fde68a] rounded-[10px] px-4 py-3.5 text-xs text-[#92400e] leading-relaxed mt-6">
-            ⚠ <strong>Regulatory notice:</strong> This assessment is for informational purposes only and does not constitute
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 text-xs text-amber-800 leading-relaxed mt-6">
+            <strong>Regulatory notice:</strong> This assessment is for informational purposes only and does not constitute
             financial, investment, tax, or legal advice. All information is confidential. Consult a licensed financial
             advisor before making investment decisions. Subject to FINRA and SEC regulations.
           </div>
         </>}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#f0f0f0]">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
           {step>0
             ? <button
-                className="px-5 py-2.5 rounded-lg border-[1.5px] border-[#e0e0e0] bg-white text-sm font-medium text-[#555] cursor-pointer transition-all duration-150 hover:border-[#999] hover:text-[#333]"
+                className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 onClick={goBack}
               >← Back</button>
             : <div />
           }
           <div className="flex items-center gap-3.5">
-            <span className="text-xs text-[#bbb] font-medium">{step+1} / {STEPS.length}</span>
+            <span className="text-xs text-gray-400 font-medium">{step+1} / {STEPS.length}</span>
             {step<STEPS.length-1
               ? <button
-                  className="px-6 py-2.5 rounded-lg bg-[#e11d48] text-sm font-semibold text-white cursor-pointer transition-colors duration-150 hover:bg-[#be123c]"
+                  className="px-6 py-2.5 rounded-lg bg-brand-600 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
                   onClick={goNext}
                 >Continue →</button>
               : <button
-                  className="px-6 py-2.5 rounded-lg bg-[#e11d48] text-sm font-semibold text-white cursor-pointer transition-colors duration-150 hover:bg-[#be123c] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-6 py-2.5 rounded-lg bg-brand-600 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed"
                   onClick={submit}
                   disabled={loading}
                 >

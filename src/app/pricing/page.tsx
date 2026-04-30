@@ -85,7 +85,7 @@ export default function PricingPage() {
         {/* Hero */}
         <div className="text-center mb-14">
           <p className="text-brand-600 text-sm font-semibold tracking-widest uppercase mb-3">Pricing</p>
-          <h1 className="font-heading text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="font-heading text-4xl font-bold text-gray-900 mb-4 tracking-tight">
             Simple, transparent pricing
           </h1>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">

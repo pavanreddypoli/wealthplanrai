@@ -20,6 +20,9 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
+    console.log('Supabase URL being used:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30))
+    console.log('Supabase key present:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
     const supabase = createClient()
 
     try {

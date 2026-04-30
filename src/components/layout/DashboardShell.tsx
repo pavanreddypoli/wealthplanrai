@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Users, ClipboardList, BarChart3,
-  Settings, LogOut,
+  Settings, LogOut, CreditCard,
 } from 'lucide-react'
 
 const NAV = [
@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Assessments', href: '/assessment',         icon: ClipboardList },
   { label: 'Reports',     href: '/dashboard/reports',  icon: BarChart3 },
   { label: 'Settings',    href: '/dashboard/settings', icon: Settings },
+  { label: 'Billing',     href: '/settings/billing',   icon: CreditCard },
 ]
 
 interface Props {

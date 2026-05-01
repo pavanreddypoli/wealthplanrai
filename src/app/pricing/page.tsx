@@ -1,8 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Check, ArrowRight, ChevronDown } from 'lucide-react'
 import { PLANS, PlanKey } from '@/lib/stripe'
+
+function NewAdvisorBanner() {
+  const params = useSearchParams()
+  if (!params.get('newAdvisor')) return null
+  return (
+    <div className="bg-brand-600 text-white text-center py-3 px-4">
+      <p className="text-sm font-medium">
+        Almost done! Choose a plan to activate your advisor profile and start receiving clients.
+      </p>
+    </div>
+  )
+}
 
 const PLAN_KEYS: PlanKey[] = ['starter', 'professional', 'enterprise']
 
@@ -66,6 +79,10 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
+
+      <Suspense fallback={null}>
+        <NewAdvisorBanner />
+      </Suspense>
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200">

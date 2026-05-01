@@ -32,11 +32,79 @@ export async function POST(req: NextRequest) {
       bio: string
       years_experience: string
       is_accepting_clients: boolean
+      upgradeExistingId?: string
     }
 
-    const { full_name, email, password, advisor_type, advisor_specialty, phone, bio, years_experience, is_accepting_clients } = body
+    const {
+      full_name, email, password, advisor_type, advisor_specialty,
+      phone, bio, years_experience, is_accepting_clients,
+    } = body
 
-    // Create auth user
+    const advisorType = TYPE_MAP[advisor_type] ?? 'advisor'
+    const admin = adminClient()
+
+    // Handle upgrade request from duplicate flow
+    if (body.upgradeExistingId) {
+      await admin.from('profiles').update({
+        advisor_type:      advisorType,
+        full_name,
+        advisor_specialty: advisor_specialty || null,
+        phone:             phone || null,
+        bio:               bio || null,
+        years_experience:  years_experience || null,
+        is_accepting_clients: is_accepting_clients ?? true,
+      }).eq('id', body.upgradeExistingId)
+      return NextResponse.json({ success: true })
+    }
+
+    // Duplicate check using admin client (bypasses RLS)
+    const { data: existingProfile } = await admin
+      .from('profiles')
+      .select('id, email, advisor_type')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle()
+
+    if (existingProfile) {
+      const existingType      = existingProfile.advisor_type as string | null
+      const existingTypeLabel = existingType === 'advisor' ? 'Financial Advisor'
+        : existingType === 'planner' ? 'Financial Planner' : 'advisor'
+
+      if (existingType === advisorType) {
+        return NextResponse.json({
+          error:   'already_exists_same_type',
+          message: `You already have a ${advisor_type} account. Please sign in instead.`,
+        }, { status: 409 })
+      }
+
+      if (existingType === 'advisor' || existingType === 'planner') {
+        return NextResponse.json({
+          error:        'already_exists_different_type',
+          message:      `You already have a ${existingTypeLabel} account. Would you like to also register as a ${advisor_type}?`,
+          canUpgrade:   true,
+          existingType,
+          existingId:   existingProfile.id,
+        }, { status: 409 })
+      }
+
+      // Existing account with no advisor type (was a client) — upgrade to advisor
+      await admin.from('profiles').update({
+        advisor_type:      advisorType,
+        full_name,
+        advisor_specialty: advisor_specialty || null,
+        phone:             phone || null,
+        bio:               bio || null,
+        years_experience:  years_experience || null,
+        is_accepting_clients: is_accepting_clients ?? true,
+      }).eq('id', existingProfile.id)
+
+      return NextResponse.json({
+        success:  true,
+        upgraded: true,
+        message:  'Your account has been upgraded to advisor access. Please sign in.',
+      })
+    }
+
+    // Create new auth user
     const supabase = anonClient()
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -46,6 +114,12 @@ export async function POST(req: NextRequest) {
         data: { full_name },
       },
     })
+
+    console.log('SignUp response:', JSON.stringify({
+      userId:         data?.user?.id,
+      emailConfirmed: data?.user?.email_confirmed_at,
+      error:          error?.message,
+    }))
 
     if (error) {
       console.error('[advisor-signup] auth.signUp error:', error.message)
@@ -59,13 +133,12 @@ export async function POST(req: NextRequest) {
     // Wait for handle_new_user trigger to create profiles row
     await new Promise(r => setTimeout(r, 500))
 
-    // Update profiles row with advisor info using admin client
-    const admin = adminClient()
+    // Update profiles row with advisor info
     const { error: profileError } = await admin
       .from('profiles')
       .update({
         full_name,
-        advisor_type:         TYPE_MAP[advisor_type] ?? 'advisor',
+        advisor_type:         advisorType,
         advisor_specialty:    advisor_specialty || null,
         phone:                phone || null,
         bio:                  bio || null,
@@ -76,10 +149,28 @@ export async function POST(req: NextRequest) {
 
     if (profileError) {
       console.error('[advisor-signup] profile update error:', profileError.message)
-      // Non-fatal — auth user was created, profile update failed but can be fixed later
     }
 
-    return NextResponse.json({ success: true, userId: data.user.id })
+    // Determine if email confirmation is required
+    const requiresConfirmation = !data.user.email_confirmed_at
+
+    if (requiresConfirmation) {
+      return NextResponse.json({
+        success:              true,
+        requiresConfirmation: true,
+        message:              'Please check your email and click the confirmation link before signing in.',
+      })
+    }
+
+    // Email confirmation is OFF — attempt auto signin
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    console.log('Auto signin after signup:', signInData?.user?.id, signInError?.message)
+
+    return NextResponse.json({
+      success:     true,
+      autoSignedIn: true,
+      userId:      data.user.id,
+    })
 
   } catch (err) {
     console.error('[advisor-signup] fatal error:', err)

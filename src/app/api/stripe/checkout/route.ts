@@ -5,9 +5,13 @@ import { getStripe, PLANS, PlanKey } from '@/lib/stripe'
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  console.log('Checkout called, user:', user?.id)
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { error: 'Please sign in to start your free trial' },
+      { status: 401 },
+    )
   }
 
   const { plan } = await req.json() as { plan: PlanKey }

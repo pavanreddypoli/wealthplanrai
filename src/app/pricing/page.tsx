@@ -2,8 +2,9 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Check, ArrowRight, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { PLANS, PlanKey } from '@/lib/stripe'
+import { CheckoutButton } from './CheckoutButton'
 
 function NewAdvisorBanner() {
   const params = useSearchParams()
@@ -59,24 +60,6 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function PricingPage() {
-  const [loading, setLoading] = useState<PlanKey | null>(null)
-
-  async function handleCheckout(plan: PlanKey) {
-    setLoading(plan)
-    try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      })
-      const { url, error } = await res.json()
-      if (error) { alert(error); return }
-      window.location.href = url
-    } finally {
-      setLoading(null)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
 
@@ -149,19 +132,11 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleCheckout(key)}
-                  disabled={loading === key}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 ${
-                    isPro
-                      ? 'bg-brand-600 hover:bg-brand-700 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                  }`}
-                >
-                  {loading === key ? 'Loading…' : (
-                    <>Start free trial <ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
+                <CheckoutButton
+                  plan={key}
+                  label={key === 'enterprise' ? 'Contact Sales' : 'Start free trial'}
+                  highlighted={isPro}
+                />
               </div>
             )
           })}

@@ -2,9 +2,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { BarChart3, ArrowLeft, ArrowRight, User, Briefcase } from 'lucide-react'
+import { BarChart3, ArrowLeft, ArrowRight, User, Briefcase, Mail } from 'lucide-react'
 
-type Mode = 'landing' | 'signin' | 'signup'
+type Mode = 'landing' | 'signin' | 'signup' | 'confirmation'
 
 const EXPERIENCE_OPTIONS = ['0–2 years', '3–5 years', '6–10 years', '11–20 years', '20+ years']
 
@@ -142,7 +142,7 @@ function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () =>
 
 // ── MODE 2: Sign In ───────────────────────────────────────────────────────────
 
-function SignIn({ onBack }: { onBack: () => void }) {
+function SignIn({ onBack, successMessage }: { onBack: () => void; successMessage?: string }) {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loading,  setLoading]  = useState(false)
@@ -154,11 +154,24 @@ function SignIn({ onBack }: { onBack: () => void }) {
     setError('')
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('Attempting signin:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('Signin result:', {
+        userId:    data?.user?.id,
+        error:     error?.message,
+        errorCode: (error as { code?: string } | null)?.code,
+      })
       if (error) throw error
       window.location.href = '/dashboard'
     } catch (err: unknown) {
-      setError("We didn't recognize those credentials — double-check your email and password.")
+      const errorMsg = (err as { message?: string })?.message ?? 'Sign in failed'
+      if (errorMsg.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account before signing in. Check your spam folder too.')
+      } else if (errorMsg.includes('Invalid login credentials')) {
+        setError('The email or password you entered is incorrect. Please double-check and try again.')
+      } else {
+        setError(errorMsg)
+      }
       console.error('[signin]', err)
     } finally {
       setLoading(false)
@@ -175,6 +188,12 @@ function SignIn({ onBack }: { onBack: () => void }) {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
         <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">Welcome back</h1>
         <p className="text-sm text-gray-500 mb-6">Sign in to your advisor account.</p>
+
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+            <p className="text-green-700 text-sm">{successMessage}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Email address">
@@ -215,14 +234,32 @@ interface SignupForm {
   is_accepting_clients: boolean
 }
 
-function AdvisorSignup({ onBack }: { onBack: () => void }) {
+interface DuplicateData {
+  message: string
+  existingId: string
+  existingType: string
+}
+
+interface AdvisorSignupProps {
+  onBack: () => void
+  onConfirmationRequired: (email: string) => void
+  onAutoSignedIn: () => void
+  onUpgraded: (message: string) => void
+  onSwitchToSignIn: () => void
+}
+
+function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgraded, onSwitchToSignIn }: AdvisorSignupProps) {
   const [form, setForm] = useState<SignupForm>({
     full_name: '', email: '', password: '', confirm_password: '',
     advisor_type: 'Financial Advisor', advisor_specialty: '',
     phone: '', bio: '', years_experience: '3–5 years', is_accepting_clients: true,
   })
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
+  const [loading,          setLoading]          = useState(false)
+  const [error,            setError]            = useState('')
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false)
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const [duplicateData,    setDuplicateData]    = useState<DuplicateData | null>(null)
+  const [upgradeLoading,   setUpgradeLoading]   = useState(false)
 
   function set(field: keyof SignupForm, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))
@@ -231,6 +268,8 @@ function AdvisorSignup({ onBack }: { onBack: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setShowSignInPrompt(false)
+    setShowUpgradePrompt(false)
     if (form.password !== form.confirm_password) {
       setError('Passwords do not match.')
       return
@@ -244,15 +283,87 @@ function AdvisorSignup({ onBack }: { onBack: () => void }) {
       const res = await fetch('/api/auth/advisor-signup', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(form),
+        credentials: 'include',
+        body: JSON.stringify(form),
       })
-      const data = await res.json() as { error?: string }
+      const data = await res.json() as {
+        error?: string
+        message?: string
+        requiresConfirmation?: boolean
+        autoSignedIn?: boolean
+        upgraded?: boolean
+        canUpgrade?: boolean
+        existingType?: string
+        existingId?: string
+      }
+
+      if (res.status === 409) {
+        if (data.error === 'already_exists_same_type') {
+          setError(data.message ?? 'An account with this email already exists.')
+          setShowSignInPrompt(true)
+        } else if (data.error === 'already_exists_different_type') {
+          setDuplicateData({
+            message:      data.message ?? '',
+            existingId:   data.existingId ?? '',
+            existingType: data.existingType ?? '',
+          })
+          setShowUpgradePrompt(true)
+        }
+        return
+      }
+
       if (!res.ok) throw new Error(data.error ?? 'Signup failed')
+
+      if (data.upgraded) {
+        onUpgraded(data.message ?? 'Your account has been upgraded. Please sign in.')
+        return
+      }
+
+      if (data.requiresConfirmation) {
+        onConfirmationRequired(form.email)
+        return
+      }
+
+      if (data.autoSignedIn) {
+        const supabase = createClient()
+        const { error: clientErr } = await supabase.auth.signInWithPassword({
+          email:    form.email,
+          password: form.password,
+        })
+        if (clientErr) {
+          console.error('[signup] client-side auto signin failed:', clientErr.message)
+        }
+        onAutoSignedIn()
+        return
+      }
+
       window.location.href = '/pricing?newAdvisor=true'
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleUpgrade() {
+    if (!duplicateData) return
+    setUpgradeLoading(true)
+    try {
+      const res = await fetch('/api/auth/advisor-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...form, upgradeExistingId: duplicateData.existingId }),
+      })
+      const d = await res.json() as { success?: boolean }
+      if (d.success) {
+        onUpgraded('Your profile has been updated. Please sign in.')
+        setShowUpgradePrompt(false)
+      }
+    } catch {
+      setError('Upgrade failed — please try again')
+    } finally {
+      setUpgradeLoading(false)
     }
   }
 
@@ -356,6 +467,39 @@ function AdvisorSignup({ onBack }: { onBack: () => void }) {
 
           {error && <ErrorBox msg={error} />}
 
+          {showSignInPrompt && (
+            <button
+              type="button"
+              onClick={() => { setShowSignInPrompt(false); setError(''); onSwitchToSignIn() }}
+              className="text-brand-600 text-sm font-medium hover:underline"
+            >
+              Sign in to your existing account →
+            </button>
+          )}
+
+          {showUpgradePrompt && duplicateData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800 mb-3">{duplicateData.message}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={upgradeLoading}
+                  onClick={handleUpgrade}
+                  className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg disabled:opacity-60 transition-colors hover:bg-brand-700"
+                >
+                  {upgradeLoading ? 'Updating…' : 'Yes, add this role →'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowUpgradePrompt(false); onSwitchToSignIn() }}
+                  className="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  No, just sign in
+                </button>
+              </div>
+            </div>
+          )}
+
           <SubmitButton loading={loading}>
             Create My Advisor Account <ArrowRight className="w-4 h-4" />
           </SubmitButton>
@@ -370,10 +514,51 @@ function AdvisorSignup({ onBack }: { onBack: () => void }) {
   )
 }
 
+// ── MODE 4: Confirmation Pending ──────────────────────────────────────────────
+
+function ConfirmationPending({ email, onSignIn }: { email: string; onSignIn: () => void }) {
+  return (
+    <div className="w-full max-w-sm">
+      <Logo />
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-5">
+          <Mail className="w-8 h-8 text-blue-600" />
+        </div>
+
+        <h1 className="font-heading text-xl font-bold text-gray-900 mb-2">Check your inbox!</h1>
+        <p className="text-sm text-gray-600 leading-relaxed mb-1">
+          We sent a confirmation link to
+        </p>
+        <p className="text-sm font-semibold text-brand-600 mb-4">{email}</p>
+        <p className="text-sm text-gray-600 leading-relaxed mb-6">
+          Click the link in that email to activate your account, then come back here to sign in.
+        </p>
+
+        <button
+          onClick={onSignIn}
+          className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 mb-4"
+        >
+          I confirmed my email — Sign In Now <ArrowRight className="w-4 h-4" />
+        </button>
+
+        <p className="text-xs text-gray-400 leading-relaxed">
+          Didn&apos;t receive it? Check your spam folder or contact us at{' '}
+          <a href="mailto:info@redcubefinancial.com" className="text-brand-600 hover:underline">
+            info@redcubefinancial.com
+          </a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── Page shell ────────────────────────────────────────────────────────────────
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<Mode>('landing')
+  const [mode,              setMode]              = useState<Mode>('landing')
+  const [confirmationEmail, setConfirmationEmail] = useState('')
+  const [successMessage,    setSuccessMessage]    = useState('')
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center px-4 py-12">
@@ -381,10 +566,25 @@ export default function AuthPage() {
         <Landing onSignIn={() => setMode('signin')} onSignUp={() => setMode('signup')} />
       )}
       {mode === 'signin' && (
-        <SignIn onBack={() => setMode('landing')} />
+        <SignIn
+          onBack={() => setMode('landing')}
+          successMessage={successMessage}
+        />
       )}
       {mode === 'signup' && (
-        <AdvisorSignup onBack={() => setMode('landing')} />
+        <AdvisorSignup
+          onBack={() => setMode('landing')}
+          onConfirmationRequired={(email) => { setConfirmationEmail(email); setMode('confirmation') }}
+          onAutoSignedIn={() => { window.location.href = '/pricing?newAdvisor=true' }}
+          onUpgraded={(msg) => { setSuccessMessage(msg); setMode('signin') }}
+          onSwitchToSignIn={() => setMode('signin')}
+        />
+      )}
+      {mode === 'confirmation' && (
+        <ConfirmationPending
+          email={confirmationEmail}
+          onSignIn={() => setMode('signin')}
+        />
       )}
     </div>
   )

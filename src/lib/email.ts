@@ -19,8 +19,8 @@ function getSgMail() {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-function from(): string {
-  return process.env.SENDGRID_FROM_EMAIL ?? 'reports@redcubefinancial.com'
+function from(): { email: string; name: string } {
+  return { email: process.env.SENDGRID_FROM_EMAIL ?? 'info@redcubefinancial.com', name: 'RedCube Financial' }
 }
 
 function appUrl(): string {

@@ -23,7 +23,12 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+
+  console.log('Middleware - user:', user?.id || 'none')
+  console.log('Middleware - session:', !!session)
+
   const { pathname } = request.nextUrl
 
   if (!user && pathname.startsWith('/dashboard')) {

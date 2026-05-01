@@ -108,17 +108,18 @@ export async function POST(req: NextRequest) {
       console.error('[send-report] info email failed:', (e as Error).message)
     }
 
-    // Client email if we have their address
-    if (email) {
+    // Client email if we have a valid address
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (email && EMAIL_RE.test(email)) {
       try {
-        await sendClientEmail(email, name, assessmentId, (data.score as number) ?? 0, data.risk_profile as string, pillars, clientPDF)
+        await sendClientEmail(email, name, assessmentId, (data.score as number) ?? 0, data.risk_profile as string, pillars, clientPDF, gaps)
         console.log('[send-report] client email sent successfully to:', email)
         emailsSent++
       } catch (e) {
         console.error('[send-report] client email failed:', (e as Error).message)
       }
     } else {
-      console.log('[send-report] skipping client email — no email address on assessment')
+      console.error('[send-report] No client email found for assessment:', assessmentId, '— raw value:', email)
     }
 
     // Advisor email if one was selected

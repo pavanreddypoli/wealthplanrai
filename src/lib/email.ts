@@ -95,34 +95,82 @@ export async function sendClientEmail(
   riskProfile: string,
   pillars: PillarScores,
   clientPDFBuffer: Buffer,
+  topGaps?: string[],
 ): Promise<void> {
-  const sgMail  = getSgMail()
-  const date    = dateStr()
-  const safe    = safeFilename(clientName)
+  const sgMail    = getSgMail()
+  const safe      = safeFilename(clientName)
   const firstName = clientName.split(' ')[0]
   const scoreColor = overallScore >= 75 ? '#16a34a' : overallScore >= 50 ? '#f59e0b' : '#ef4444'
+
+  function statusOf(score: number): { label: string; color: string } {
+    if (score >= 80) return { label: 'Excellent',       color: '#16a34a' }
+    if (score >= 60) return { label: 'Good',            color: '#2563eb' }
+    if (score >= 40) return { label: 'Needs Attention', color: '#f59e0b' }
+    return             { label: 'At Risk',            color: '#ef4444' }
+  }
+
+  const sp = statusOf(pillars.protect)
+  const sg = statusOf(pillars.grow)
+  const sl = statusOf(pillars.legacy)
+
+  function scoreBar(score: number, color: string): string {
+    return `<span style="display:inline-block;width:${Math.round(score * 0.65)}px;height:7px;background:${color};border-radius:4px;vertical-align:middle;margin-right:6px;"></span><span style="font-size:13px;">${score}/100</span>`
+  }
+
+  const gapSection = topGaps && topGaps.length > 0 ? `
+    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:24px 0 10px;">Key Areas To Address</h3>
+    <ul style="margin:0;padding:0 0 0 18px;">
+      ${topGaps.slice(0, 3).map(g => `<li style="padding:5px 0;font-size:13px;color:#374151;line-height:1.6;">${g}</li>`).join('')}
+    </ul>` : ''
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:system-ui,sans-serif;">
 <div style="max-width:600px;margin:28px auto;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;">
-  ${emailHeader('Your Financial Health Summary')}
+  ${emailHeader('Your Financial Health Summary is Ready')}
   <div style="padding:28px 36px;">
-    <p style="color:#374151;font-size:15px;line-height:1.7;">Dear ${firstName},</p>
-    <p style="color:#374151;font-size:14px;line-height:1.7;">Thank you for completing your financial health assessment. We have prepared your personalized summary based on the <strong>RedCube Three Pillars: Protect, Grow, and Leave a Legacy</strong>.</p>
+    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 12px;">Hi ${firstName},</p>
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">Thank you for completing your RedCube Financial Health Assessment! Your personalized summary is <strong>attached to this email as a PDF</strong> — take a few minutes to review it at your convenience.</p>
 
     <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px 22px;margin:20px 0;text-align:center;">
-      <p style="margin:0;font-size:12px;color:#3b82f6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Overall Score</p>
-      <p style="margin:6px 0 0;font-size:42px;font-weight:800;color:${scoreColor};line-height:1;">${overallScore}<span style="font-size:18px;color:#6b7280;">/100</span></p>
+      <p style="margin:0;font-size:12px;color:#3b82f6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Overall Financial Health Score</p>
+      <p style="margin:6px 0 0;font-size:48px;font-weight:800;color:${scoreColor};line-height:1;">${overallScore}<span style="font-size:18px;color:#6b7280;">/100</span></p>
       <p style="margin:6px 0 0;font-size:13px;color:#6b7280;">${riskProfile.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Investor Profile</p>
     </div>
 
-    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Three Pillars Scorecard</h3>
-    ${pillarTable(pillars)}
+    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Your Three Pillars Scorecard</h3>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-top:4px;">
+      <tr style="background:#f9fafb;">
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;width:32%;">Pillar</th>
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">Score</th>
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">Status</th>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">🛡️ Protect</td>
+        <td style="padding:10px 14px;">${scoreBar(pillars.protect, sp.color)}</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sp.color};">${sp.label}</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">📈 Grow</td>
+        <td style="padding:10px 14px;">${scoreBar(pillars.grow, sg.color)}</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sg.color};">${sg.label}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">🏛️ Legacy</td>
+        <td style="padding:10px 14px;">${scoreBar(pillars.legacy, sl.color)}</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sl.color};">${sl.label}</td>
+      </tr>
+    </table>
 
-    <p style="color:#374151;font-size:14px;line-height:1.7;margin-top:20px;">Your detailed summary is <strong>attached to this email as a PDF</strong>. It includes your full financial snapshot, pillar-by-pillar breakdown, and your top priority action steps.</p>
-    <p style="color:#374151;font-size:14px;line-height:1.7;">A RedCube advisor will be in touch within <strong>1 business day</strong> to discuss your results and build your personalized financial plan.</p>
+    ${gapSection}
 
-    ${ctaButton(`${appUrl()}/summary?id=${assessmentId}`, 'View Your Full Results Online')}
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin-top:22px;">A RedCube advisor will be in touch within <strong>1 business day</strong> to walk you through your results and help you build a personalized action plan.</p>
+
+    ${ctaButton(`${appUrl()}/results?id=${assessmentId}`, 'View Your Full Summary Online')}
+
+    <div style="border-top:1px solid #e5e7eb;margin-top:24px;padding-top:18px;">
+      <p style="margin:0;font-size:13px;color:#374151;font-weight:600;">The RedCube Financial Team</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">info@redcubefinancial.com</p>
+    </div>
   </div>
   ${emailFooter(CLIENT_DISCLAIMER)}
 </div>
@@ -131,7 +179,7 @@ export async function sendClientEmail(
   await sgMail.send({
     from: from(),
     to:   clientEmail,
-    subject: `Your RedCube Financial Health Summary — ${clientName}`,
+    subject: `Your RedCube Financial Health Summary is Ready, ${firstName}!`,
     html,
     attachments: [{
       content:     clientPDFBuffer.toString('base64'),
@@ -214,28 +262,98 @@ export async function sendAdvisorEmail(
   topPriorities: string[],
   assessmentId: string,
   advisorPDFBuffer: Buffer,
+  opts?: {
+    clientPhone?: string
+    grossIncome?: string
+    investableAssets?: string
+    topGaps?: string[]
+    isCompanyNotification?: boolean
+  },
 ): Promise<void> {
-  const sgMail   = getSgMail()
-  const date     = dateStr()
-  const safe     = safeFilename(clientName)
+  const sgMail    = getSgMail()
+  const date      = dateStr()
+  const safe      = safeFilename(clientName)
+  const isCompany = opts?.isCompanyNotification ?? false
   const firstName = advisorName.split(' ')[0]
+
+  function scoreStatus(score: number): { label: string; color: string } {
+    if (score >= 80) return { label: 'Excellent',       color: '#16a34a' }
+    if (score >= 60) return { label: 'Good',            color: '#2563eb' }
+    if (score >= 40) return { label: 'Needs Attention', color: '#f59e0b' }
+    return             { label: 'At Risk',            color: '#ef4444' }
+  }
+
+  const sp = scoreStatus(pillars.protect)
+  const sg = scoreStatus(pillars.grow)
+  const sl = scoreStatus(pillars.legacy)
+
+  const riskLabel = riskProfile.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 
   const priorityItems = topPriorities.filter(Boolean).slice(0, 3)
     .map(p => `<li style="padding:4px 0;font-size:13px;color:#374151;">${p.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</li>`).join('')
 
+  const gapItems = (opts?.topGaps ?? []).slice(0, 3)
+    .map(g => `<li style="padding:4px 0;font-size:13px;color:#374151;">${g}</li>`).join('')
+
+  const subject = isCompany
+    ? `New Assessment Submitted — ${clientName} — Score: ${overallScore}/100`
+    : `New Client Match — ${clientName} — RedCube Financial`
+
+  const greeting = isCompany
+    ? `<p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">New client assessment received:</p>`
+    : `<p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 4px;">Hi ${firstName},</p>
+       <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">A prospective client has selected you as their preferred RedCube advisor. Please reach out within <strong>24 hours</strong>.</p>`
+
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:system-ui,sans-serif;">
 <div style="max-width:600px;margin:28px auto;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;">
-  ${emailHeader('New Client Match — Action Required')}
+  ${emailHeader(isCompany ? 'New Assessment Submitted' : 'New Client Match — Action Required')}
   <div style="padding:28px 36px;">
-    <p style="color:#374151;font-size:15px;line-height:1.7;">Hi ${firstName},</p>
-    <p style="color:#374151;font-size:14px;line-height:1.7;">A prospective client has selected you as their preferred RedCube advisor. Please reach out within <strong>24 hours</strong>.</p>
+    ${greeting}
 
-    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Client Overview</h3>
-    ${clientSummaryTable(clientName, clientEmail, overallScore, riskProfile, date)}
+    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Client Contact</h3>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+      <tr style="background:#f9fafb;"><td style="padding:9px 14px;font-size:12px;color:#6b7280;width:38%;">Name</td><td style="padding:9px 14px;font-size:13px;font-weight:600;color:#111827;">${clientName}</td></tr>
+      <tr><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Email</td><td style="padding:9px 14px;font-size:13px;">${clientEmail ? `<a href="mailto:${clientEmail}" style="color:#2563eb;">${clientEmail}</a>` : '—'}</td></tr>
+      ${opts?.clientPhone ? `<tr style="background:#f9fafb;"><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Phone</td><td style="padding:9px 14px;font-size:13px;color:#374151;">${opts.clientPhone}</td></tr>` : ''}
+    </table>
+
+    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Financial Overview</h3>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+      ${opts?.grossIncome ? `<tr style="background:#f9fafb;"><td style="padding:9px 14px;font-size:12px;color:#6b7280;width:38%;">Gross Income</td><td style="padding:9px 14px;font-size:13px;color:#374151;">${opts.grossIncome}</td></tr>` : ''}
+      ${opts?.investableAssets ? `<tr><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Investable Assets</td><td style="padding:9px 14px;font-size:13px;color:#374151;">${opts.investableAssets}</td></tr>` : ''}
+      <tr style="background:#f9fafb;"><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Risk Profile</td><td style="padding:9px 14px;font-size:13px;color:#374151;">${riskLabel}</td></tr>
+      <tr><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Overall Score</td><td style="padding:9px 14px;font-size:13px;font-weight:700;color:#2563eb;">${overallScore}/100</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:9px 14px;font-size:12px;color:#6b7280;">Assessment Date</td><td style="padding:9px 14px;font-size:13px;color:#374151;">${date}</td></tr>
+    </table>
 
     <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Three Pillars Scorecard</h3>
-    ${pillarTable(pillars)}
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-top:4px;">
+      <tr style="background:#f9fafb;">
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;width:32%;">Pillar</th>
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">Score</th>
+        <th style="padding:8px 14px;text-align:left;font-size:11px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">Status</th>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">🛡️ Protect</td>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;">${pillars.protect}/100</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sp.color};">${sp.label}</td>
+      </tr>
+      <tr style="background:#f9fafb;">
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">📈 Grow</td>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;">${pillars.grow}/100</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sg.color};">${sg.label}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;font-weight:600;">🏛️ Legacy</td>
+        <td style="padding:10px 14px;font-size:13px;color:#374151;">${pillars.legacy}/100</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${sl.color};">${sl.label}</td>
+      </tr>
+    </table>
+
+    ${gapItems ? `
+    <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Top Gaps Identified</h3>
+    <ul style="margin:0;padding:0 0 0 16px;">${gapItems}</ul>` : ''}
 
     ${biggestConcern ? `
     <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Client's Biggest Concern</h3>
@@ -245,13 +363,14 @@ export async function sendAdvisorEmail(
     <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Client's Top Priorities</h3>
     <ul style="margin:0;padding:0 0 0 16px;">${priorityItems}</ul>` : ''}
 
+    ${!isCompany && clientEmail ? `
     <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin:20px 0;">
       <p style="margin:0;font-size:13px;color:#92400e;font-weight:600;">📧 Please contact ${clientName} at <a href="mailto:${clientEmail}" style="color:#2563eb;">${clientEmail}</a> within 24 hours.</p>
-    </div>
+    </div>` : ''}
 
-    <p style="color:#374151;font-size:13px;line-height:1.7;">The full advisor report with detailed analysis and product recommendations is attached as a PDF.</p>
+    <p style="color:#374151;font-size:13px;line-height:1.7;margin-top:12px;">The full advisor report with detailed analysis and product recommendations is attached as a PDF.</p>
 
-    ${ctaButton(`${appUrl()}/summary?id=${assessmentId}`, 'View Full Assessment')}
+    ${ctaButton(`${appUrl()}/results?id=${assessmentId}`, 'View Full Assessment')}
   </div>
   ${emailFooter(ADVISOR_DISCLAIMER)}
 </div>
@@ -260,7 +379,7 @@ export async function sendAdvisorEmail(
   await sgMail.send({
     from: from(),
     to:   advisorEmail,
-    subject: `New Client Match — ${clientName} — RedCube Financial`,
+    subject,
     html,
     attachments: [{
       content:     advisorPDFBuffer.toString('base64'),

@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Download, Eye, StickyNote, AlertTriangle, CheckCircle2,
-  AlertCircle, X, Users, TrendingUp, ShieldAlert, Clock, ClipboardList,
+  AlertCircle, X, Users, TrendingUp, ShieldAlert, CalendarDays, ClipboardList,
   Link as LinkIcon,
 } from 'lucide-react'
 import type { AssessmentRow } from './page'
@@ -37,12 +37,6 @@ const RISK_BADGE: Record<string, string> = {
   moderate:        'bg-amber-100 text-amber-700',
   aggressive:      'bg-orange-100 text-orange-700',
   very_aggressive: 'bg-rose-100 text-rose-700',
-}
-
-const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  submitted: { label: 'Submitted', cls: 'bg-blue-100 text-blue-700' },
-  reviewed:  { label: 'Reviewed',  cls: 'bg-emerald-100 text-emerald-700' },
-  actioned:  { label: 'Actioned',  cls: 'bg-slate-100 text-slate-600' },
 }
 
 const AVATAR_COLORS = [
@@ -107,17 +101,15 @@ function FlagCell({ count }: { count: number }) {
   return <span className="flex items-center gap-1 text-rose-600 text-xs font-medium"><AlertTriangle className="w-3.5 h-3.5" />{count}</span>
 }
 
-function OpportunityCell({ score }: { score: number }) {
-  const opp  = 100 - score
-  const label = opp >= 50 ? 'High' : opp >= 25 ? 'Medium' : 'Low'
-  const bar   = opp >= 50 ? 'bg-rose-500' : opp >= 25 ? 'bg-amber-400' : 'bg-gray-300'
-  const text  = opp >= 50 ? 'text-rose-600' : opp >= 25 ? 'text-amber-600' : 'text-gray-400'
+function PillarBar({ score }: { score: number }) {
+  const barColor  = score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : 'bg-rose-500'
+  const textColor = score >= 75 ? 'text-emerald-700' : score >= 50 ? 'text-amber-600' : 'text-rose-600'
   return (
-    <div className="flex items-center gap-2 min-w-[80px]">
+    <div className="flex items-center gap-1.5 min-w-[64px]">
       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full ${bar} rounded-full`} style={{ width: `${opp}%` }} />
+        <div className={`h-full ${barColor} rounded-full`} style={{ width: `${score}%` }} />
       </div>
-      <span className={`text-[11px] font-semibold ${text} w-10 flex-shrink-0`}>{label}</span>
+      <span className={`text-[10px] font-bold ${textColor} w-5 flex-shrink-0`}>{score}</span>
     </div>
   )
 }
@@ -146,16 +138,9 @@ function NotesPanel({
 }) {
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-[1px]"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
+      <div className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-[1px]" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-[380px] bg-white shadow-2xl z-50 flex flex-col">
 
-        {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Advisor Notes</h2>
@@ -169,7 +154,6 @@ function NotesPanel({
           </button>
         </div>
 
-        {/* Notes list */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -207,7 +191,6 @@ function NotesPanel({
           )}
         </div>
 
-        {/* Add note form */}
         <div className="border-t border-gray-100 px-5 py-4 space-y-3 flex-shrink-0 bg-gray-50">
           <input
             type="text"
@@ -254,12 +237,10 @@ function NotesPanel({
 export function AssessmentTable({ initialAssessments }: { initialAssessments: AssessmentRow[] }) {
   const router = useRouter()
 
-  // Search
   const [search, setSearch] = useState('')
 
-  // Notes panel state
-  const [panel, setPanel] = useState<PanelState | null>(null)
-  const [notes, setNotes] = useState<Note[]>([])
+  const [panel, setPanel]         = useState<PanelState | null>(null)
+  const [notes, setNotes]         = useState<Note[]>([])
   const [notesLoading, setNotesLoading] = useState(false)
   const [noteTitle, setNoteTitle] = useState('')
   const [noteBody, setNoteBody]   = useState('')
@@ -267,7 +248,6 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
   const [saving, setSaving]       = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  // Derived
   const filtered = useMemo(() => {
     if (!search.trim()) return initialAssessments
     const q = search.toLowerCase()
@@ -283,15 +263,14 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
       ? Math.round(initialAssessments.reduce((s, a) => s + (a.score ?? 0), 0) / total)
       : 0
     const highRisk = initialAssessments.filter(a => (a.score ?? 0) < 50).length
-    const pending  = initialAssessments.filter(a => a.status === 'submitted').length
-    return { total, avgScore, highRisk, pending }
+    const cutoff   = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const newThisWeek = initialAssessments.filter(a => new Date(a.created_at).getTime() > cutoff).length
+    return { total, avgScore, highRisk, newThisWeek }
   }, [initialAssessments])
 
-  // Notes panel actions
   const openPanel = useCallback(async (row: AssessmentRow, e: React.MouseEvent) => {
     e.stopPropagation()
-    const state = { assessmentId: row.id, clientName: row.full_name ?? 'Client' }
-    setPanel(state)
+    setPanel({ assessmentId: row.id, clientName: row.full_name ?? 'Client' })
     setNotes([])
     setNoteTitle(''); setNoteBody(''); setNoteTags('')
     setNotesLoading(true)
@@ -304,8 +283,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
   }, [])
 
   const closePanel = useCallback(() => {
-    setPanel(null)
-    setNotes([])
+    setPanel(null); setNotes([])
     setNoteTitle(''); setNoteBody(''); setNoteTags(''); setSaveError('')
   }, [])
 
@@ -317,23 +295,18 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
       const res  = await fetch('/api/notes', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          assessment_id: panel.assessmentId,
-          title: noteTitle.trim() || null,
-          body:  noteBody,
-          tags,
-        }),
+        body:    JSON.stringify({ assessment_id: panel.assessmentId, title: noteTitle.trim() || null, body: noteBody, tags }),
       })
       if (res.ok) {
-        const refreshRes  = await fetch(`/api/notes?assessment_id=${panel.assessmentId}`)
-        const refreshData = await refreshRes.json()
-        setNotes(Array.isArray(refreshData) ? refreshData : [])
+        const r = await fetch(`/api/notes?assessment_id=${panel.assessmentId}`)
+        const d = await r.json()
+        setNotes(Array.isArray(d) ? d : [])
         setNoteTitle(''); setNoteBody(''); setNoteTags('')
       } else {
-        setSaveError("We couldn't save that note right now — please try again in a moment")
+        setSaveError("Couldn't save — please try again")
       }
     } catch {
-      setSaveError("We couldn't save that note right now — please try again in a moment")
+      setSaveError("Couldn't save — please try again")
     } finally { setSaving(false) }
   }, [panel, noteTitle, noteBody, noteTags])
 
@@ -345,33 +318,12 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
 
   return (
     <>
-      {/* ── Topbar ───────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between flex-shrink-0 sticky top-0 z-10">
-        <h1 className="font-heading text-base font-semibold text-gray-900">Client Assessments</h1>
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-            <input
-              type="search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search clients…"
-              className="pl-8 pr-3 h-8 w-52 text-sm border border-gray-200 rounded-lg outline-none focus:border-brand-400 transition-colors bg-gray-50 placeholder:text-gray-400"
-            />
-          </div>
-          <button className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
-          </button>
-        </div>
-      </header>
-
       <div className="p-6 space-y-5">
 
         {/* ── Stats row ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            label="Total Assessments"
+            label="Total Clients"
             value={stats.total}
             sub="all time"
             icon={ClipboardList}
@@ -392,40 +344,61 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
             iconCls="bg-rose-50 text-rose-500"
           />
           <StatCard
-            label="Pending Review"
-            value={stats.pending}
-            sub="status: submitted"
-            icon={Clock}
-            iconCls="bg-amber-50 text-amber-500"
+            label="New This Week"
+            value={stats.newThisWeek}
+            sub="last 7 days"
+            icon={CalendarDays}
+            iconCls="bg-blue-50 text-blue-500"
           />
         </div>
 
-        {/* ── Table ─────────────────────────────────────────────────── */}
+        {/* ── Table / Empty state ────────────────────────────────────── */}
         {initialAssessments.length === 0 ? (
-          /* Empty state */
+
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-24 gap-4">
             <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
               <Users className="w-7 h-7 text-slate-300" />
             </div>
             <div className="text-center">
-              <p className="text-base font-semibold text-gray-700">No assessments yet</p>
-              <p className="text-sm text-gray-400 mt-1">Share the link to start collecting client assessments.</p>
+              <p className="text-base font-semibold text-gray-700">No client assessments yet</p>
+              <p className="text-sm text-gray-400 mt-1">Share your assessment link to start receiving clients.</p>
             </div>
             <button
               onClick={copyAssessmentLink}
               className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-xl hover:bg-brand-700 transition-colors"
             >
               <LinkIcon className="w-3.5 h-3.5" />
-              Share Assessment Link
+              Copy Assessment Link
             </button>
           </div>
+
         ) : (
+
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
+            {/* Table toolbar */}
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search clients…"
+                  className="pl-8 pr-3 h-8 w-52 text-sm border border-gray-200 rounded-lg outline-none focus:border-brand-400 transition-colors bg-gray-50 placeholder:text-gray-400"
+                />
+              </div>
+              <button className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    {['Client', 'Health Score', 'Risk Profile', 'Risk Flags', 'Opportunity', 'Status', 'Date', 'Actions'].map(h => (
+                    {['Client', 'Score', 'Risk Profile', 'Protect', 'Grow', 'Legacy', 'Flags', 'Date', 'Actions'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
@@ -435,7 +408,7 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-sm text-gray-400">
+                      <td colSpan={9} className="text-center py-12 text-sm text-gray-400">
                         No clients match &ldquo;{search}&rdquo;
                       </td>
                     </tr>
@@ -445,7 +418,6 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
                       const flagCount = row.score_results?.risk_flags?.length ?? 0
                       const riskCls   = RISK_BADGE[row.risk_profile] ?? 'bg-gray-100 text-gray-600'
                       const riskLbl   = RISK_LABEL[row.risk_profile] ?? row.risk_profile
-                      const statusCfg = STATUS_CONFIG[row.status ?? ''] ?? { label: row.status ?? '—', cls: 'bg-gray-100 text-gray-500' }
                       const initials  = getInitials(row.full_name)
                       const avCls     = avatarColor(row.full_name)
 
@@ -462,17 +434,13 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
                                 {initials}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-medium text-gray-900 truncate max-w-[140px]">
-                                  {row.full_name ?? '—'}
-                                </p>
-                                <p className="text-[11px] text-gray-400 truncate max-w-[140px]">
-                                  {row.email ?? ''}
-                                </p>
+                                <p className="font-medium text-gray-900 truncate max-w-[130px]">{row.full_name ?? '—'}</p>
+                                <p className="text-[11px] text-gray-400 truncate max-w-[130px]">{row.email ?? ''}</p>
                               </div>
                             </div>
                           </td>
 
-                          {/* HEALTH SCORE */}
+                          {/* SCORE */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${sc.bg} ${sc.text}`}>
                               {row.score ?? 0}/100
@@ -486,21 +454,24 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
                             </span>
                           </td>
 
-                          {/* RISK FLAGS */}
+                          {/* PROTECT */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <PillarBar score={row.protect_score} />
+                          </td>
+
+                          {/* GROW */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <PillarBar score={row.grow_score} />
+                          </td>
+
+                          {/* LEGACY */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <PillarBar score={row.legacy_score} />
+                          </td>
+
+                          {/* FLAGS */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <FlagCell count={flagCount} />
-                          </td>
-
-                          {/* OPPORTUNITY */}
-                          <td className="px-4 py-3">
-                            <OpportunityCell score={row.score ?? 0} />
-                          </td>
-
-                          {/* STATUS */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusCfg.cls}`}>
-                              {statusCfg.label}
-                            </span>
                           </td>
 
                           {/* DATE */}
@@ -540,12 +511,11 @@ export function AssessmentTable({ initialAssessments }: { initialAssessments: As
               </table>
             </div>
 
-            {/* Table footer */}
             {filtered.length > 0 && (
-              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
                 <p className="text-xs text-gray-400">
-                  Showing {filtered.length} of {initialAssessments.length} assessment{initialAssessments.length !== 1 ? 's' : ''}
-                  {search && ` for "${search}"`}
+                  Showing {filtered.length} of {initialAssessments.length} client{initialAssessments.length !== 1 ? 's' : ''}
+                  {search && ` matching "${search}"`}
                 </p>
               </div>
             )}

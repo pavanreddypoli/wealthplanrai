@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { AssessmentTable } from './AssessmentTable'
 import type { ScoreResults } from '@/lib/scoring'
 
-// ── Shared types (consumed by AssessmentTable) ────────────────────────────────
+// ── Shared types ──────────────────────────────────────────────────────────────
 
 export interface AssessmentRow {
   id: string
@@ -15,6 +15,21 @@ export interface AssessmentRow {
   status: string | null
   assigned_advisor_id: string | null
   note_count: number
+  protect_score: number
+  grow_score: number
+  legacy_score: number
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function computePillars(sr: ScoreResults | null) {
+  const s = sr?.sub_scores
+  if (!s) return { protect: 0, grow: 0, legacy: 0 }
+  return {
+    protect: Math.round((s.insurance + s.cashflow) / 2),
+    grow:    Math.round((s.investments + s.retirement) / 2),
+    legacy:  Math.round((s.estate + s.tax) / 2),
+  }
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -22,7 +37,6 @@ export interface AssessmentRow {
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Fetch assessments + note counts in parallel
   const [assessmentsResult, noteRowsResult] = await Promise.all([
     supabase
       .from('assessments')
@@ -36,12 +50,10 @@ export default async function DashboardPage() {
   if (assessmentsResult.error) {
     console.error('[Dashboard] assessments query error:', assessmentsResult.error.message)
   }
-
   if (noteRowsResult.error) {
     console.error('[Dashboard] advisor_notes query error:', noteRowsResult.error.message)
   }
 
-  // Build per-assessment note count map
   const noteCounts: Record<string, number> = {}
   for (const row of noteRowsResult.data ?? []) {
     if (row.assessment_id) {
@@ -49,18 +61,26 @@ export default async function DashboardPage() {
     }
   }
 
-  const rows: AssessmentRow[] = (assessmentsResult.data ?? []).map(a => ({
-    id:                  a.id,
-    full_name:           (a as Record<string, unknown>).full_name as string | null ?? null,
-    email:               (a as Record<string, unknown>).email as string | null ?? null,
-    created_at:          a.created_at,
-    score:               (a as Record<string, unknown>).score as number ?? 0,
-    risk_profile:        (a as Record<string, unknown>).risk_profile as string ?? 'moderate',
-    score_results:       (a as Record<string, unknown>).score_results as ScoreResults | null ?? null,
-    status:              (a as Record<string, unknown>).status as string | null ?? null,
-    assigned_advisor_id: (a as Record<string, unknown>).assigned_advisor_id as string | null ?? null,
-    note_count:          noteCounts[a.id] ?? 0,
-  }))
+  const rows: AssessmentRow[] = (assessmentsResult.data ?? []).map(a => {
+    const raw = a as Record<string, unknown>
+    const scoreResults = raw.score_results as ScoreResults | null ?? null
+    const pillars = computePillars(scoreResults)
+    return {
+      id:                  a.id,
+      full_name:           raw.full_name as string | null ?? null,
+      email:               raw.email as string | null ?? null,
+      created_at:          a.created_at,
+      score:               raw.score as number ?? 0,
+      risk_profile:        raw.risk_profile as string ?? 'moderate',
+      score_results:       scoreResults,
+      status:              raw.status as string | null ?? null,
+      assigned_advisor_id: raw.assigned_advisor_id as string | null ?? null,
+      note_count:          noteCounts[a.id] ?? 0,
+      protect_score:       pillars.protect,
+      grow_score:          pillars.grow,
+      legacy_score:        pillars.legacy,
+    }
+  })
 
   return <AssessmentTable initialAssessments={rows} />
 }

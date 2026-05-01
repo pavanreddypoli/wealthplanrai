@@ -5,16 +5,17 @@ import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Users, ClipboardList, BarChart3,
-  Settings, LogOut, CreditCard,
+  Settings, LogOut, CreditCard, UserCheck,
 } from 'lucide-react'
 
 const NAV = [
-  { label: 'Dashboard',   href: '/dashboard',          icon: LayoutDashboard },
-  { label: 'Clients',     href: '/dashboard/clients',  icon: Users },
-  { label: 'Assessments', href: '/assessment',         icon: ClipboardList },
-  { label: 'Reports',     href: '/dashboard/reports',  icon: BarChart3 },
-  { label: 'Settings',    href: '/dashboard/settings', icon: Settings },
-  { label: 'Billing',     href: '/settings/billing',   icon: CreditCard },
+  { label: 'Dashboard',      href: '/dashboard',          icon: LayoutDashboard },
+  { label: 'Clients',        href: '/dashboard/clients',  icon: Users },
+  { label: 'Assessments',    href: '/assessment',         icon: ClipboardList },
+  { label: 'Reports',        href: '/dashboard/reports',  icon: BarChart3 },
+  { label: 'Advisor Profile', href: '/advisor/register',  icon: UserCheck },
+  { label: 'Settings',       href: '/dashboard/settings', icon: Settings },
+  { label: 'Billing',        href: '/settings/billing',   icon: CreditCard },
 ]
 
 interface Props {

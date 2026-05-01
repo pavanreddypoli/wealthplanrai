@@ -7,14 +7,16 @@ interface Advisor {
   email: string | null
   advisor_type: string | null
   advisor_specialty: string | null
+  phone: string | null
+  bio: string | null
 }
 
 export function AdvisorSelector({ assessmentId }: { assessmentId: string }) {
-  const [advisors,  setAdvisors]  = useState<Advisor[]>([])
-  const [selected,  setSelected]  = useState<string>('none')
-  const [loading,   setLoading]   = useState(false)
-  const [saved,     setSaved]     = useState(false)
-  const [error,     setError]     = useState('')
+  const [advisors, setAdvisors] = useState<Advisor[]>([])
+  const [selected, setSelected] = useState<string>('none')
+  const [loading,  setLoading]  = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [error,    setError]    = useState('')
 
   useEffect(() => {
     fetch('/api/advisors')
@@ -55,12 +57,11 @@ export function AdvisorSelector({ assessmentId }: { assessmentId: string }) {
     )
   }
 
-  if (advisors.length === 0) {
-    return (
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
-        <p className="text-blue-700 text-sm">Our team will match you with the perfect advisor within 1 business day.</p>
-      </div>
-    )
+  function advisorLabel(a: Advisor): string {
+    const typeLabel = a.advisor_type === 'planner' ? 'Financial Planner' : 'Financial Advisor'
+    const parts = [a.full_name ?? 'Advisor', typeLabel]
+    if (a.advisor_specialty) parts.push(a.advisor_specialty)
+    return parts.join(' · ')
   }
 
   return (
@@ -71,17 +72,25 @@ export function AdvisorSelector({ assessmentId }: { assessmentId: string }) {
       <select
         value={selected}
         onChange={e => setSelected(e.target.value)}
-        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 mb-4"
+        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 mb-3"
       >
         <option value="none">No preference — assign me to the next available advisor</option>
         {advisors.map(a => (
           <option key={a.id} value={a.id}>
-            {a.full_name ?? 'Advisor'}
-            {a.advisor_type ? ` — ${a.advisor_type.charAt(0).toUpperCase() + a.advisor_type.slice(1)}` : ''}
-            {a.advisor_specialty ? ` — ${a.advisor_specialty}` : ''}
+            {advisorLabel(a)}
           </option>
         ))}
       </select>
+
+      {/* Bio preview for selected advisor */}
+      {selectedAdvisor?.bio && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-4">
+          <p className="text-xs text-blue-800 leading-relaxed">{selectedAdvisor.bio}</p>
+          {selectedAdvisor.phone && (
+            <p className="text-xs text-blue-500 mt-1">{selectedAdvisor.phone}</p>
+          )}
+        </div>
+      )}
 
       <button
         onClick={handleConnect}
@@ -90,7 +99,7 @@ export function AdvisorSelector({ assessmentId }: { assessmentId: string }) {
       >
         {loading
           ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Connecting…</>
-          : 'Connect with this Advisor'
+          : 'Confirm Selection'
         }
       </button>
 

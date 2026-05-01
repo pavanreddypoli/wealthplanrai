@@ -13,7 +13,7 @@ export async function GET() {
     const supabase = adminClient()
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, advisor_type, advisor_specialty')
+      .select('id, full_name, email, advisor_type, advisor_specialty, phone, bio')
       .in('advisor_type', ['advisor', 'planner'])
       .eq('is_accepting_clients', true)
       .order('full_name', { ascending: true })

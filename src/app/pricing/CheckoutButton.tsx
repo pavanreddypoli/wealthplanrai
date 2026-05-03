@@ -24,7 +24,7 @@ export function CheckoutButton({ plan, label, highlighted }: Props) {
       })
       const data = await response.json() as { url?: string; error?: string }
       if (response.status === 401) {
-        window.location.href = '/auth/login?redirectTo=/pricing'
+        window.location.href = `/auth/login?mode=signup&plan=${plan}&redirectTo=/pricing`
         return
       }
       if (!response.ok) throw new Error(data.error ?? 'Failed to start checkout')

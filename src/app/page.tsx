@@ -66,6 +66,54 @@ const PLANS = [
   },
 ]
 
+function HeroIllustration() {
+  return (
+    <div className="hidden lg:block w-96 flex-shrink-0">
+      <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="360" height="280" rx="16" fill="white" stroke="#E2E8F0" strokeWidth="1.5"/>
+        <rect x="20" y="20" width="360" height="52" rx="16" fill="#1E3A8A"/>
+        <rect x="20" y="52" width="360" height="20" fill="#1E3A8A"/>
+        <circle cx="52" cy="46" r="12" fill="#3B82F6" opacity="0.5"/>
+        <rect x="72" y="38" width="80" height="8" rx="4" fill="white" opacity="0.6"/>
+        <rect x="72" y="50" width="50" height="6" rx="3" fill="white" opacity="0.3"/>
+        <circle cx="100" cy="140" r="45" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="2"/>
+        <circle cx="100" cy="140" r="35" fill="none" stroke="#2563EB" strokeWidth="6" strokeDasharray="176 44" strokeLinecap="round" transform="rotate(-90 100 140)"/>
+        <text x="100" y="135" textAnchor="middle" fill="#1E3A8A" fontSize="18" fontWeight="bold">78</text>
+        <text x="100" y="150" textAnchor="middle" fill="#64748B" fontSize="8">Health Score</text>
+        <rect x="175" y="100" width="60" height="8" rx="4" fill="#EFF6FF"/>
+        <rect x="175" y="100" width="48" height="8" rx="4" fill="#2563EB"/>
+        <text x="175" y="95" fill="#64748B" fontSize="7">Protect</text>
+        <text x="238" y="109" fill="#1E3A8A" fontSize="7" fontWeight="bold">80%</text>
+        <rect x="175" y="125" width="60" height="8" rx="4" fill="#EFF6FF"/>
+        <rect x="175" y="125" width="36" height="8" rx="4" fill="#F59E0B"/>
+        <text x="175" y="120" fill="#64748B" fontSize="7">Grow</text>
+        <text x="238" y="134" fill="#1E3A8A" fontSize="7" fontWeight="bold">60%</text>
+        <rect x="175" y="150" width="60" height="8" rx="4" fill="#EFF6FF"/>
+        <rect x="175" y="150" width="24" height="8" rx="4" fill="#EF4444"/>
+        <text x="175" y="145" fill="#64748B" fontSize="7">Legacy</text>
+        <text x="238" y="159" fill="#1E3A8A" fontSize="7" fontWeight="bold">40%</text>
+        <rect x="40" y="210" width="320" height="1" fill="#F1F5F9"/>
+        <circle cx="60" cy="233" r="14" fill="#DBEAFE"/>
+        <text x="60" y="237" textAnchor="middle" fill="#2563EB" fontSize="9" fontWeight="bold">JD</text>
+        <rect x="82" y="225" width="80" height="7" rx="3" fill="#E2E8F0"/>
+        <rect x="82" y="236" width="50" height="5" rx="2" fill="#F1F5F9"/>
+        <rect x="290" y="226" width="50" height="14" rx="7" fill="#DCFCE7"/>
+        <text x="315" y="236" textAnchor="middle" fill="#16A34A" fontSize="7">Active</text>
+        <rect x="40" y="255" width="320" height="1" fill="#F1F5F9"/>
+        <circle cx="60" cy="270" r="14" fill="#FEF3C7"/>
+        <text x="60" y="274" textAnchor="middle" fill="#D97706" fontSize="9" fontWeight="bold">SR</text>
+        <rect x="82" y="262" width="70" height="7" rx="3" fill="#E2E8F0"/>
+        <rect x="82" y="273" width="45" height="5" rx="2" fill="#F1F5F9"/>
+        <rect x="290" y="263" width="50" height="14" rx="7" fill="#FEF3C7"/>
+        <text x="315" y="273" textAnchor="middle" fill="#D97706" fontSize="7">Review</text>
+        <rect x="260" y="80" width="100" height="36" rx="10" fill="#2563EB" opacity="0.95"/>
+        <text x="310" y="96" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">AI Powered</text>
+        <text x="310" y="108" textAnchor="middle" fill="white" opacity="0.8" fontSize="7">FINRA Compliant</text>
+      </svg>
+    </div>
+  )
+}
+
 export default function HomePage() {
   return (
     <div className="bg-white">
@@ -74,32 +122,36 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/50 to-slate-50">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.08),transparent_60%)]" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-36 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-brand-600 text-xs font-medium mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
-            Now in early access — 14-day free trial
+        <div className="absolute inset-0 opacity-5" style={{backgroundImage:'radial-gradient(circle,#1E40AF 1px,transparent 1px)',backgroundSize:'24px 24px'}} />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 lg:py-36 flex items-center gap-12">
+          <div className="flex-1 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-brand-600 text-xs font-medium mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
+              Now in early access — 14-day free trial
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-gray-900">
+              AI-Powered Financial Planning<br />
+              <span className="text-brand-600">for Modern Advisors</span>
+            </h1>
+            <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              WealthPlanrAI combines artificial intelligence with compliance-first financial planning —
+              helping advisors assess clients, identify gaps, and deliver personalized plans in minutes.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <Link href="/assessment">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Start free assessment <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="#features">
+                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                  See how it works
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-4 text-xs text-gray-500">No credit card required · 14-day free trial · Cancel anytime</p>
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-gray-900">
-            AI-Powered Financial Planning<br />
-            <span className="text-brand-600">for Modern Advisors</span>
-          </h1>
-          <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            WealthPlanrAI combines artificial intelligence with compliance-first financial planning —
-            helping advisors assess clients, identify gaps, and deliver personalized plans in minutes.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/assessment">
-              <Button size="lg" className="w-full sm:w-auto">
-                Start free assessment <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="#features">
-              <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                See how it works
-              </Button>
-            </Link>
-          </div>
-          <p className="mt-4 text-xs text-gray-500">No credit card required · 14-day free trial · Cancel anytime</p>
+          <HeroIllustration />
         </div>
       </section>
 
@@ -128,7 +180,7 @@ export default function HomePage() {
             {FEATURES.map(f => {
               const Icon = f.icon
               return (
-                <div key={f.title} className="p-6 rounded-xl border border-gray-100 hover:border-brand-200 hover:shadow-sm transition-all">
+                <div key={f.title} className="p-6 rounded-xl border border-gray-100 hover:border-brand-200 hover:-translate-y-1 hover:shadow-md transition-all duration-200">
                   <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center mb-4">
                     <Icon className="w-5 h-5 text-brand-600" />
                   </div>

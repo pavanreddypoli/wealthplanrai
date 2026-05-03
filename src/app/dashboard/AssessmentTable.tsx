@@ -83,13 +83,13 @@ function scoreClasses(score: number) {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, icon: Icon, iconCls,
+  label, value, sub, icon: Icon, iconCls, cardBg,
 }: {
   label: string; value: string | number; sub?: string
-  icon: React.ElementType; iconCls: string
+  icon: React.ElementType; iconCls: string; cardBg?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3 sm:gap-4">
+    <div className={`${cardBg ?? 'bg-white'} rounded-xl border border-gray-200 shadow-sm px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3 sm:gap-4`}>
       <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconCls}`}>
         <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
       </div>
@@ -411,7 +411,8 @@ export function AssessmentTable({
             value={stats.total}
             sub="all time"
             icon={ClipboardList}
-            iconCls="bg-slate-100 text-slate-500"
+            iconCls="bg-blue-100 text-blue-500"
+            cardBg="bg-gradient-to-br from-blue-50 to-white"
           />
           <StatCard
             label="Avg Health Score"
@@ -419,6 +420,7 @@ export function AssessmentTable({
             sub="out of 100"
             icon={TrendingUp}
             iconCls="bg-emerald-50 text-emerald-500"
+            cardBg="bg-gradient-to-br from-green-50 to-white"
           />
           <StatCard
             label="High Risk Clients"
@@ -426,13 +428,15 @@ export function AssessmentTable({
             sub="score below 50"
             icon={ShieldAlert}
             iconCls="bg-rose-50 text-rose-500"
+            cardBg="bg-gradient-to-br from-red-50 to-white"
           />
           <StatCard
             label="New This Week"
             value={stats.newThisWeek}
             sub="last 7 days"
             icon={CalendarDays}
-            iconCls="bg-blue-50 text-blue-500"
+            iconCls="bg-amber-50 text-amber-500"
+            cardBg="bg-gradient-to-br from-amber-50 to-white"
           />
         </div>
 
@@ -463,20 +467,36 @@ export function AssessmentTable({
         {/* ── Table / Empty state ────────────────────────────────────── */}
         {initialAssessments.length === 0 ? (
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-24 gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-              <Users className="w-7 h-7 text-slate-300" />
-            </div>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-20 gap-4 px-6">
+            <svg width="160" height="120" viewBox="0 0 160 120" className="opacity-90">
+              <rect x="20" y="70" width="120" height="8" rx="4" fill="#E2E8F0"/>
+              <rect x="50" y="25" width="60" height="42" rx="6" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="1.5"/>
+              <rect x="55" y="30" width="50" height="32" rx="3" fill="#EFF6FF"/>
+              <rect x="60" y="35" width="30" height="4" rx="2" fill="#BFDBFE"/>
+              <rect x="60" y="43" width="40" height="3" rx="1.5" fill="#DBEAFE"/>
+              <rect x="60" y="50" width="25" height="3" rx="1.5" fill="#DBEAFE"/>
+              <rect x="76" y="67" width="8" height="8" rx="1" fill="#E2E8F0"/>
+              <rect x="68" y="74" width="24" height="4" rx="2" fill="#E2E8F0"/>
+              <rect x="118" y="58" width="18" height="16" rx="3" fill="#FEF3C7" stroke="#FDE68A" strokeWidth="1"/>
+              <path d="M136 63 Q142 63 142 68 Q142 73 136 73" stroke="#FDE68A" strokeWidth="1.5" fill="none"/>
+              <circle cx="30" cy="40" r="12" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="1"/>
+              <text x="30" y="44" textAnchor="middle" fontSize="10">👤</text>
+              <circle cx="138" cy="35" r="10" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1"/>
+              <text x="138" y="39" textAnchor="middle" fontSize="9">📊</text>
+            </svg>
             <div className="text-center">
               <p className="text-base font-semibold text-gray-700">No client assessments yet</p>
-              <p className="text-sm text-gray-400 mt-1">Share your assessment link to start receiving clients.</p>
+              <p className="text-sm text-gray-400 mt-1 max-w-xs">
+                Share your assessment link to start receiving clients.
+                They will appear here once they complete the form.
+              </p>
             </div>
             <button
               onClick={copyAssessmentLink}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-xl hover:bg-brand-700 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
             >
               <LinkIcon className="w-3.5 h-3.5" />
-              Copy Assessment Link
+              Share Assessment Link
             </button>
           </div>
 

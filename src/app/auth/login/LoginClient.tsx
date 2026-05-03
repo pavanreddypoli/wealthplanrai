@@ -77,9 +77,29 @@ function Logo() {
 
 // ── MODE 1: Landing ───────────────────────────────────────────────────────────
 
+function LoginIllustration() {
+  return (
+    <div className="text-center mb-2">
+      <svg width="80" height="80" viewBox="0 0 80 80" className="mx-auto">
+        <circle cx="40" cy="40" r="38" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="1"/>
+        <rect x="18" y="50" width="8" height="16" rx="2" fill="#93C5FD"/>
+        <rect x="30" y="40" width="8" height="26" rx="2" fill="#60A5FA"/>
+        <rect x="42" y="32" width="8" height="34" rx="2" fill="#3B82F6"/>
+        <rect x="54" y="24" width="8" height="42" rx="2" fill="#2563EB"/>
+        <polyline points="22,48 34,38 46,30 58,22" stroke="#1D4ED8" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <circle cx="22" cy="48" r="3" fill="#1D4ED8"/>
+        <circle cx="34" cy="38" r="3" fill="#1D4ED8"/>
+        <circle cx="46" cy="30" r="3" fill="#1D4ED8"/>
+        <circle cx="58" cy="22" r="3" fill="#1D4ED8"/>
+      </svg>
+    </div>
+  )
+}
+
 function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () => void }) {
   return (
     <div className="w-full max-w-2xl">
+      <LoginIllustration />
       <Logo />
 
       <div className="text-center mb-8">
@@ -134,7 +154,14 @@ function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () =>
 
       </div>
 
-      <p className="mt-8 text-xs text-gray-400 text-center">
+      <p className="text-center text-xs text-gray-400 mt-4">
+        Already have an account?{' '}
+        <button onClick={onSignIn} className="text-blue-600 hover:underline font-medium">
+          Sign in here →
+        </button>
+      </p>
+
+      <p className="mt-3 text-xs text-gray-400 text-center">
         By signing up you agree to our Terms of Service and Privacy Policy.
       </p>
     </div>
@@ -290,9 +317,10 @@ interface AdvisorSignupProps {
   onUpgraded: (message: string) => void
   onSwitchToSignIn: () => void
   initialDiscountCode?: string
+  selectedPlan?: string
 }
 
-function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgraded, onSwitchToSignIn, initialDiscountCode }: AdvisorSignupProps) {
+function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgraded, onSwitchToSignIn, initialDiscountCode, selectedPlan }: AdvisorSignupProps) {
   const [form, setForm] = useState<SignupForm>({
     full_name: '', email: '', password: '', confirm_password: '',
     advisor_type: 'Financial Advisor', advisor_specialty: '',
@@ -455,7 +483,16 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
         <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">Join WealthPlanrAI as a Financial Professional</h1>
-        <p className="text-sm text-gray-500 mb-8">Create your account and start receiving client matches today.</p>
+        <p className="text-sm text-gray-500 mb-4">Create your account and start receiving client matches today.</p>
+
+        {selectedPlan && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+            <span className="text-blue-500">✓</span>
+            <p className="text-xs text-blue-800 font-medium">
+              You are signing up for the {selectedPlan} plan — 14 day free trial
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -763,14 +800,25 @@ export function LoginClient({ initialError, redirectTo, initialMode }: LoginClie
   const [mode,              setMode]              = useState<Mode>(initialMode)
   const [confirmationEmail, setConfirmationEmail] = useState('')
   const [successMessage,    setSuccessMessage]    = useState('')
-  const [initialCode,       setInitialCode]       = useState('')
+  const [initialCode,   setInitialCode]   = useState('')
+  const [selectedPlan,  setSelectedPlan]  = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const ref = params.get('ref')
+    const urlMode = params.get('mode')
+    const ref     = params.get('ref')
+    const plan    = params.get('plan')
+
+    if (urlMode === 'signup') {
+      setMode('signup')
+      if (plan) setSelectedPlan(plan)
+    } else if (urlMode === 'signin') {
+      setMode('signin')
+    }
+
     if (ref) {
       setInitialCode(ref.toUpperCase())
-      setMode('signup')
+      if (urlMode !== 'signin') setMode('signup')
     }
   }, [])
 
@@ -802,6 +850,7 @@ export function LoginClient({ initialError, redirectTo, initialMode }: LoginClie
           onUpgraded={(msg) => { setSuccessMessage(msg); setMode('signin') }}
           onSwitchToSignIn={() => setMode('signin')}
           initialDiscountCode={initialCode}
+          selectedPlan={selectedPlan || undefined}
         />
       )}
       {mode === 'forgot' && (

@@ -160,6 +160,46 @@ const PRIORITY_BADGE: Record<string, string> = {
 
 const DISCLAIMER = `This financial assessment summary is prepared by WealthPlanrAI LLC and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. Fixed Indexed Annuities (FIAs) and Indexed Universal Life (IUL) policies are insurance products, not securities, and are not FDIC insured. Securities, when applicable, are offered through registered broker-dealers and are subject to FINRA and SEC regulations. WealthPlanrAI advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions. WealthPlanrAI LLC is not responsible for actions taken based on this summary without professional consultation.`
 
+// ── Score illustration ────────────────────────────────────────────────────────
+
+function ScoreIllustration({ score }: { score: number }) {
+  if (score >= 75) {
+    return (
+      <div className="flex justify-center mb-4">
+        <svg width="120" height="60" viewBox="0 0 120 60">
+          <text x="10" y="30" fontSize="20">⭐</text>
+          <text x="45" y="20" fontSize="28">🏆</text>
+          <text x="85" y="30" fontSize="20">⭐</text>
+          <circle cx="30" cy="10" r="3" fill="#FCD34D" opacity="0.6"/>
+          <circle cx="90" cy="10" r="3" fill="#FCD34D" opacity="0.6"/>
+          <circle cx="20" cy="45" r="2" fill="#60A5FA" opacity="0.5"/>
+          <circle cx="100" cy="45" r="2" fill="#60A5FA" opacity="0.5"/>
+        </svg>
+      </div>
+    )
+  }
+  if (score >= 50) {
+    return (
+      <div className="flex justify-center mb-4">
+        <svg width="120" height="60" viewBox="0 0 120 60">
+          <text x="45" y="40" fontSize="36">📊</text>
+          <circle cx="25" cy="20" r="4" fill="#60A5FA" opacity="0.4"/>
+          <circle cx="95" cy="20" r="4" fill="#60A5FA" opacity="0.4"/>
+        </svg>
+      </div>
+    )
+  }
+  return (
+    <div className="flex justify-center mb-4">
+      <svg width="120" height="60" viewBox="0 0 120 60">
+        <text x="45" y="40" fontSize="36">🎯</text>
+        <circle cx="25" cy="20" r="4" fill="#FCA5A5" opacity="0.4"/>
+        <circle cx="95" cy="20" r="4" fill="#FCA5A5" opacity="0.4"/>
+      </svg>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default async function SummaryPage({
@@ -249,6 +289,7 @@ export default async function SummaryPage({
       {/* Hero gradient */}
       <div className="bg-[#EFF6FF] border-b border-blue-100 px-4 sm:px-6 py-7 sm:py-10">
         <div className="max-w-5xl mx-auto text-center">
+          <ScoreIllustration score={overall} />
           <p className="text-brand-600 text-xs font-semibold uppercase tracking-widest mb-3">
             Evaluated against the WealthPlanrAI Three Pillars
           </p>

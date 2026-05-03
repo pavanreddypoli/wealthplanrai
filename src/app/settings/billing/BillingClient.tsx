@@ -206,6 +206,22 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
         </div>
       </div>
 
+      {/* Free plan upgrade illustration */}
+      {plan === 'free' && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4 text-center">
+          <svg width="100" height="80" viewBox="0 0 100 80" className="mx-auto mb-3">
+            <circle cx="50" cy="35" r="30" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="1.5"/>
+            <text x="50" y="45" textAnchor="middle" fontSize="28">🚀</text>
+            <circle cx="15" cy="20" r="3" fill="#FCD34D" opacity="0.7"/>
+            <circle cx="85" cy="15" r="4" fill="#FCD34D" opacity="0.7"/>
+            <circle cx="10" cy="50" r="2" fill="#93C5FD" opacity="0.6"/>
+            <circle cx="90" cy="50" r="2" fill="#93C5FD" opacity="0.6"/>
+          </svg>
+          <p className="text-sm font-semibold text-gray-700">Ready to launch your practice?</p>
+          <p className="text-xs text-gray-500 mt-1">Start your 14-day free trial — no credit card required</p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {hasStripe ? (

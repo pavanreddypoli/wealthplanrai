@@ -106,6 +106,7 @@ export default function PricingPage() {
                     ? 'border-2 border-brand-600 bg-white shadow-lg shadow-brand-100'
                     : 'border border-gray-200 bg-white'
                 }`}
+                style={isPro ? {boxShadow: '0 0 40px rgba(37,99,235,0.15)'} : undefined}
               >
                 {isPro && (
                   <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-4 py-1 rounded-full">

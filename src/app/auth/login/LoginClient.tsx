@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BarChart3, ArrowLeft, ArrowRight, User, Briefcase, Mail } from 'lucide-react'
 
-type Mode = 'landing' | 'signin' | 'signup' | 'confirmation'
+type Mode = 'landing' | 'signin' | 'signup' | 'confirmation' | 'forgot'
 
 const EXPERIENCE_OPTIONS = ['0–2 years', '3–5 years', '6–10 years', '11–20 years', '20+ years']
 
@@ -145,11 +145,13 @@ function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () =>
 
 function SignIn({
   onBack,
+  onForgotPassword,
   successMessage,
   initialError,
   redirectTo,
 }: {
   onBack: () => void
+  onForgotPassword: () => void
   successMessage?: string
   initialError?: string | null
   redirectTo?: string
@@ -220,6 +222,15 @@ function SignIn({
           <Field label="Password">
             <TextInput type="password" autoComplete="current-password" required placeholder="••••••••"
               value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="flex justify-end mt-1">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-xs text-brand-600 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
           </Field>
 
           {error && <ErrorBox msg={error} />}
@@ -533,6 +544,85 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
   )
 }
 
+// ── MODE 5: Forgot Password ───────────────────────────────────────────────────
+
+function ForgotPassword({ onBack }: { onBack: () => void }) {
+  const [forgotEmail,   setForgotEmail]   = useState('')
+  const [loading,       setLoading]       = useState(false)
+  const [error,         setError]         = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState(false)
+
+  async function handleForgotPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        forgotEmail.toLowerCase().trim(),
+        { redirectTo: `${window.location.origin}/auth/reset-password` },
+      )
+      if (error) throw error
+      setForgotSuccess(true)
+    } catch (e: any) {
+      setError(e.message || 'Failed to send reset email. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="w-full max-w-sm">
+      <Logo />
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🔑</span>
+          </div>
+          <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">Reset your password</h1>
+          <p className="text-sm text-gray-500">Enter your email and we&apos;ll send you a reset link.</p>
+        </div>
+
+        {forgotSuccess ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <p className="text-sm font-semibold text-green-800 mb-1">Check your inbox!</p>
+            <p className="text-xs text-green-600">
+              We sent a password reset link to {forgotEmail}.
+              Check your spam folder if you don&apos;t see it.
+            </p>
+            <button
+              onClick={() => { onBack(); setForgotSuccess(false) }}
+              className="mt-3 text-xs text-brand-600 hover:underline"
+            >
+              Back to sign in →
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            {error && <ErrorBox msg={error} />}
+            <Field label="Email Address">
+              <TextInput
+                type="email"
+                required
+                placeholder="you@firm.com"
+                value={forgotEmail}
+                onChange={e => setForgotEmail(e.target.value)}
+              />
+            </Field>
+            <SubmitButton loading={loading}>
+              Send Reset Link <ArrowRight className="w-4 h-4" />
+            </SubmitButton>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── MODE 4: Confirmation Pending ──────────────────────────────────────────────
 
 function ConfirmationPending({ email, onSignIn }: { email: string; onSignIn: () => void }) {
@@ -600,6 +690,7 @@ export function LoginClient({ initialError, redirectTo, initialMode }: LoginClie
       {mode === 'signin' && (
         <SignIn
           onBack={() => setMode('landing')}
+          onForgotPassword={() => setMode('forgot')}
           successMessage={successMessage}
           initialError={initialError}
           redirectTo={redirectTo}
@@ -613,6 +704,9 @@ export function LoginClient({ initialError, redirectTo, initialMode }: LoginClie
           onUpgraded={(msg) => { setSuccessMessage(msg); setMode('signin') }}
           onSwitchToSignIn={() => setMode('signin')}
         />
+      )}
+      {mode === 'forgot' && (
+        <ForgotPassword onBack={() => setMode('signin')} />
       )}
       {mode === 'confirmation' && (
         <ConfirmationPending

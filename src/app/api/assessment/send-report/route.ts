@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         if (!advisorPDF) throw new Error('advisor PDF unavailable')
         await sendAdvisorEmail(
           recipient,
-          'RedCube Financial Team',
+          'WealthPlanrAI Team',
           name,
           email,
           score,

@@ -388,7 +388,7 @@ export function AssessmentTable({
             <div className="flex items-center gap-3">
               <span className="text-2xl">🎉</span>
               <div>
-                <p className="text-sm font-semibold text-green-800">Welcome to RedCube WealthOS!</p>
+                <p className="text-sm font-semibold text-green-800">Welcome to WealthPlanrAI!</p>
                 <p className="text-xs text-green-600 mt-0.5">Your plan is now active. Start receiving clients today.</p>
               </div>
             </div>

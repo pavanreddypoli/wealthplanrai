@@ -205,7 +205,7 @@ function Logo() {
     <Link href="/" className="flex items-center gap-2">
       <span className="text-brand-600 text-lg font-bold leading-none">■</span>
       <span className="text-[15px] text-gray-900 font-semibold">
-        RedCube <span className="text-brand-600">WealthOS</span>
+        WealthPlanr<span className="text-brand-600">AI</span>
       </span>
     </Link>
   )

@@ -1,4 +1,4 @@
-# RedCube WealthOS — Build Progress
+# WealthPlanrAI — Build Progress
 
 ## Last updated: May 3, 2026 (session 4)
 

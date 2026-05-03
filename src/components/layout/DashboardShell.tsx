@@ -67,8 +67,7 @@ export function DashboardShell({ children, userEmail, userName, advisorType }: P
           <div className="flex items-center gap-2.5">
             <span className="text-brand-600 text-[18px] leading-none font-bold">■</span>
             <div>
-              <p className="text-[13px] font-bold text-gray-900 leading-none tracking-tight">RedCube</p>
-              <p className="text-[10px] text-gray-400 leading-none mt-0.5">WealthOS</p>
+              <p className="text-[13px] font-bold text-gray-900 leading-none tracking-tight">WealthPlanr<span className="text-brand-600">AI</span></p>
             </div>
           </div>
         </div>
@@ -115,7 +114,7 @@ export function DashboardShell({ children, userEmail, userName, advisorType }: P
         <header className="lg:hidden bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-brand-600 text-lg font-bold leading-none">■</span>
-            <span className="text-[14px] font-bold text-gray-900">RedCube <span className="text-brand-600">WealthOS</span></span>
+            <span className="text-[14px] font-bold text-gray-900">WealthPlanr<span className="text-brand-600">AI</span></span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center text-[11px] font-bold text-white">
@@ -161,7 +160,7 @@ export function DashboardShell({ children, userEmail, userName, advisorType }: P
             <div className="px-5 h-14 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-brand-600 text-lg font-bold leading-none">■</span>
-                <span className="text-[14px] font-bold text-gray-900">RedCube <span className="text-brand-600">WealthOS</span></span>
+                <span className="text-[14px] font-bold text-gray-900">WealthPlanr<span className="text-brand-600">AI</span></span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}

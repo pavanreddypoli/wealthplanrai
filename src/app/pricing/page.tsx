@@ -72,7 +72,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-brand-600 text-[18px] font-bold">■</span>
-            <span className="text-[13px] font-bold text-gray-900 tracking-tight">RedCube WealthOS</span>
+            <span className="text-[13px] font-bold text-gray-900 tracking-tight">WealthPlanr<span className="text-brand-600">AI</span></span>
           </Link>
           <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Back to Dashboard
@@ -155,7 +155,7 @@ export default function PricingPage() {
         {/* Regulatory disclaimer */}
         <div className="border border-gray-200 rounded-xl p-6 bg-white max-w-3xl mx-auto text-center">
           <p className="text-xs text-gray-400 leading-relaxed">
-            RedCube WealthOS is a practice-management tool for licensed financial advisors. It does not
+            WealthPlanrAI is a practice-management tool for licensed financial advisors. It does not
             constitute investment advice and is not regulated by the FCA, SEC, or any financial authority.
             All scoring and recommendations are for illustrative purposes only. Advisors are solely
             responsible for ensuring their advice meets applicable regulatory requirements.

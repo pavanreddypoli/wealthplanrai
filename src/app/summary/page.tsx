@@ -140,7 +140,7 @@ function overallParagraph(firstName: string, overall: number, pillars: { protect
   const legacy  = pillars.legacy >= 80 ? 'a comprehensive legacy plan' : pillars.legacy >= 50 ? 'a partial legacy framework' : 'legacy planning gaps that need attention'
   const overall_str = overall >= 75 ? 'a strong overall foundation with targeted improvements available' : overall >= 50 ? 'a solid foundation with important gaps to address' : 'meaningful opportunities to strengthen your financial position across all areas'
   const risk    = riskProfile.replace('_', ' ')
-  return `${firstName}'s financial assessment reveals ${overall_str}, with an overall score of ${overall}/100. The results show ${protect}, ${grow}, and ${legacy}. As a ${risk} investor, the recommendations below have been tailored to your risk profile and timeline. A RedCube advisor will contact you within 1 business day to walk through a prioritized action plan.`
+  return `${firstName}'s financial assessment reveals ${overall_str}, with an overall score of ${overall}/100. The results show ${protect}, ${grow}, and ${legacy}. As a ${risk} investor, the recommendations below have been tailored to your risk profile and timeline. A WealthPlanrAI advisor will contact you within 1 business day to walk through a prioritized action plan.`
 }
 
 function topPriorityActions(sr: ScoreResults | null): { num: number; text: string }[] {
@@ -158,7 +158,7 @@ const PRIORITY_BADGE: Record<string, string> = {
   Low:    'bg-slate-100 text-slate-600 border border-slate-200',
 }
 
-const DISCLAIMER = `This financial assessment summary is prepared by RedCube Financial and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. Fixed Indexed Annuities (FIAs) and Indexed Universal Life (IUL) policies are insurance products, not securities, and are not FDIC insured. Securities, when applicable, are offered through registered broker-dealers and are subject to FINRA and SEC regulations. RedCube Financial advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions. RedCube Financial is not responsible for actions taken based on this summary without professional consultation.`
+const DISCLAIMER = `This financial assessment summary is prepared by WealthPlanrAI LLC and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. Fixed Indexed Annuities (FIAs) and Indexed Universal Life (IUL) policies are insurance products, not securities, and are not FDIC insured. Securities, when applicable, are offered through registered broker-dealers and are subject to FINRA and SEC regulations. WealthPlanrAI advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions. WealthPlanrAI LLC is not responsible for actions taken based on this summary without professional consultation.`
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -241,7 +241,7 @@ export default async function SummaryPage({
       <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between sticky top-0 z-20">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-brand-600 text-lg font-bold leading-none">■</span>
-          <span className="text-[15px] text-gray-900 font-semibold">RedCube <span className="text-brand-600">WealthOS</span></span>
+          <span className="text-[15px] text-gray-900 font-semibold">WealthPlanr<span className="text-brand-600">AI</span></span>
         </Link>
         <span className="text-[11px] text-gray-400 tracking-[1.2px] uppercase">Financial Summary</span>
       </header>
@@ -250,7 +250,7 @@ export default async function SummaryPage({
       <div className="bg-[#EFF6FF] border-b border-blue-100 px-4 sm:px-6 py-7 sm:py-10">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-brand-600 text-xs font-semibold uppercase tracking-widest mb-3">
-            Evaluated against the RedCube Financial Three Pillars
+            Evaluated against the WealthPlanrAI Three Pillars
           </p>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
             Your Financial Health Summary
@@ -382,7 +382,7 @@ export default async function SummaryPage({
             Ready to build your personalized financial plan?
           </h2>
           <p className="text-brand-100 text-sm mb-6 max-w-md mx-auto">
-            A RedCube advisor will review your results and contact you within 1 business day.
+            A WealthPlanrAI advisor will review your results and contact you within 1 business day.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link

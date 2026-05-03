@@ -24,7 +24,7 @@ export function Navbar() {
           <span className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-white" />
           </span>
-          <span>RedCube <span className="text-brand-600">WealthOS</span></span>
+          <span>WealthPlanr<span className="text-brand-600">AI</span></span>
         </Link>
 
         {/* Desktop links */}

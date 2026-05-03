@@ -2,13 +2,19 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: { default: 'RedCube WealthOS', template: '%s | RedCube WealthOS' },
-  description: 'AI-powered wealth management platform for financial advisors and their clients.',
-  keywords: ['wealth management', 'financial advisor', 'portfolio', 'AI', 'RIA'],
+  title: { default: 'WealthPlanrAI — AI-Powered Financial Planning', template: '%s | WealthPlanrAI' },
+  description: 'AI-powered financial planning platform for modern advisors. Assess clients, generate insights, and deliver personalized financial plans powered by AI.',
+  keywords: ['financial planning', 'AI financial advisor', 'wealth management', 'financial assessment', 'RIA software', 'CFP tools'],
   openGraph: {
-    title: 'RedCube WealthOS',
-    description: 'AI-powered wealth management for the modern advisor.',
+    title: 'WealthPlanrAI — AI-Powered Financial Planning',
+    description: 'AI-powered financial planning for modern advisors',
     type: 'website',
+    url: 'https://wealthplanrai.com',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WealthPlanrAI',
+    description: 'AI-powered financial planning for modern advisors',
   },
 }
 

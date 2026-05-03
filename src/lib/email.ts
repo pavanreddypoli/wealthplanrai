@@ -22,7 +22,7 @@ function getSgMail() {
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 function from(): { email: string; name: string } {
-  return { email: process.env.SENDGRID_FROM_EMAIL ?? 'info@redcubefinancial.com', name: 'RedCube Financial' }
+  return { email: process.env.SENDGRID_FROM_EMAIL ?? 'info@redcubefinancial.com', name: 'WealthPlanrAI' }
 }
 
 function appUrl(): string {
@@ -39,7 +39,7 @@ function dateStr(): string {
 
 function emailHeader(title: string): string {
   return `<div style="background:#1e3a8a;padding:28px 36px;">
-    <p style="margin:0;color:#93c5fd;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">RedCube Financial</p>
+    <p style="margin:0;color:#93c5fd;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">WealthPlanrAI</p>
     <h1 style="margin:8px 0 0;color:#fff;font-size:20px;font-weight:700;">${title}</h1>
   </div>`
 }
@@ -83,9 +83,9 @@ function ctaButton(href: string, label: string): string {
   </div>`
 }
 
-const CLIENT_DISCLAIMER = `This summary is for informational purposes only and does not constitute investment, tax, legal, or insurance advice. Based on self-reported data. Consult a licensed financial professional before making financial decisions. RedCube Financial LLC.`
+const CLIENT_DISCLAIMER = `This summary is for informational purposes only and does not constitute investment, tax, legal, or insurance advice. Based on self-reported data. Consult a licensed financial professional before making financial decisions. WealthPlanrAI LLC.`
 
-const ADVISOR_DISCLAIMER = `This report is for licensed financial professionals only. Does not constitute a solicitation or offer to buy or sell any security or insurance product. All recommendations based on self-reported client data. Advisors must conduct independent suitability analysis per FINRA Rule 2111 and SEC Reg BI. RedCube Financial LLC is not a registered investment advisor or broker-dealer. © RedCube Financial LLC — Confidential.`
+const ADVISOR_DISCLAIMER = `This report is for licensed financial professionals only. Does not constitute a solicitation or offer to buy or sell any security or insurance product. All recommendations based on self-reported client data. Advisors must conduct independent suitability analysis per FINRA Rule 2111 and SEC Reg BI. WealthPlanrAI LLC is not a registered investment advisor or broker-dealer. © WealthPlanrAI LLC — Confidential.`
 
 // ── FUNCTION 1: sendClientEmail ───────────────────────────────────────────────
 
@@ -131,7 +131,7 @@ export async function sendClientEmail(
   ${emailHeader('Your Financial Health Summary is Ready')}
   <div style="padding:28px 36px;">
     <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 12px;">Hi ${firstName},</p>
-    <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">Thank you for completing your RedCube Financial Health Assessment! Your personalized summary is <strong>attached to this email as a PDF</strong> — take a few minutes to review it at your convenience.</p>
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">Thank you for completing your WealthPlanrAI Financial Health Assessment! Your personalized summary is <strong>attached to this email as a PDF</strong> — take a few minutes to review it at your convenience.</p>
 
     <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px 22px;margin:20px 0;text-align:center;">
       <p style="margin:0;font-size:12px;color:#3b82f6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Overall Financial Health Score</p>
@@ -165,12 +165,12 @@ export async function sendClientEmail(
 
     ${gapSection}
 
-    <p style="color:#374151;font-size:14px;line-height:1.7;margin-top:22px;">A RedCube advisor will be in touch within <strong>1 business day</strong> to walk you through your results and help you build a personalized action plan.</p>
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin-top:22px;">A WealthPlanrAI advisor will be in touch within <strong>1 business day</strong> to walk you through your results and help you build a personalized action plan.</p>
 
     ${ctaButton(`${appUrl()}/results?id=${assessmentId}`, 'View Your Full Summary Online')}
 
     <div style="border-top:1px solid #e5e7eb;margin-top:24px;padding-top:18px;">
-      <p style="margin:0;font-size:13px;color:#374151;font-weight:600;">The RedCube Financial Team</p>
+      <p style="margin:0;font-size:13px;color:#374151;font-weight:600;">The WealthPlanrAI Team</p>
       <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">info@redcubefinancial.com</p>
     </div>
   </div>
@@ -182,7 +182,7 @@ export async function sendClientEmail(
   await sgMail.send({
     from: from(),
     to:   clientEmail,
-    subject: `Your RedCube Financial Health Summary is Ready, ${firstName}!`,
+    subject: `Your WealthPlanrAI Financial Health Summary is Ready, ${firstName}!`,
     html,
     attachments: [{
       content:     clientPDFBuffer.toString('base64'),
@@ -217,7 +217,7 @@ export async function sendInfoEmail(
 <div style="max-width:600px;margin:28px auto;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;">
   ${emailHeader('New Client Assessment Received')}
   <div style="padding:28px 36px;">
-    <p style="color:#374151;font-size:14px;line-height:1.7;">A new client has completed the RedCube financial assessment. Please review and assign to an advisor.</p>
+    <p style="color:#374151;font-size:14px;line-height:1.7;">A new client has completed the WealthPlanrAI financial assessment. Please review and assign to an advisor.</p>
 
     <h3 style="font-size:12px;font-weight:700;color:#6b7280;letter-spacing:2px;text-transform:uppercase;margin:20px 0 10px;">Client Summary</h3>
     ${clientSummaryTable(clientName, clientEmail, overallScore, riskProfile, date)}
@@ -301,12 +301,12 @@ export async function sendAdvisorEmail(
 
   const subject = isCompany
     ? `New Assessment Submitted — ${clientName} — Score: ${overallScore}/100`
-    : `New Client Match — ${clientName} — RedCube Financial`
+    : `New Client Match — ${clientName} — WealthPlanrAI`
 
   const greeting = isCompany
     ? `<p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">New client assessment received:</p>`
     : `<p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 4px;">Hi ${firstName},</p>
-       <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">A prospective client has selected you as their preferred RedCube advisor. Please reach out within <strong>24 hours</strong>.</p>`
+       <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">A prospective client has selected you as their preferred WealthPlanrAI advisor. Please reach out within <strong>24 hours</strong>.</p>`
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
 <body style="margin:0;padding:0;background:#F8FAFC;font-family:system-ui,sans-serif;">

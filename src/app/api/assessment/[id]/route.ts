@@ -116,7 +116,7 @@ export async function PATCH(
             ),
             sendAdvisorEmail(
               process.env.COMPANY_EMAIL ?? 'info@redcubefinancial.com',
-              'RedCube Financial',
+              'WealthPlanrAI',
               name,
               email,
               score,

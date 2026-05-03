@@ -366,19 +366,19 @@ function retirementProjection(a: Record<string, unknown>): string {
 
 // ── FULL REGULATORY DISCLAIMER ────────────────────────────────────────────────
 
-const ADVISOR_DISCLAIMER = `This report is prepared by RedCube Financial for use by licensed financial professionals only. It does not constitute a solicitation or offer to buy or sell any security or insurance product. All recommendations are based on self-reported client data and have not been independently verified. Past performance is not indicative of future results. All investments involve risk including possible loss of principal.
+const ADVISOR_DISCLAIMER = `This report is prepared by WealthPlanrAI LLC for use by licensed financial professionals only. It does not constitute a solicitation or offer to buy or sell any security or insurance product. All recommendations are based on self-reported client data and have not been independently verified. Past performance is not indicative of future results. All investments involve risk including possible loss of principal.
 
 Insurance products including life insurance, annuities, IUL, FIA, VUL, and disability insurance are subject to underwriting approval and policy terms. Insurance products are not FDIC insured and are not bank deposits or obligations.
 
 Securities products including mutual funds, ETFs, stocks, and variable products may only be offered by registered representatives of a FINRA member broker-dealer. Fixed insurance products may be offered by licensed insurance agents.
 
-This analysis is for informational purposes only. RedCube Financial advisors must conduct their own suitability analysis in accordance with FINRA Rule 2111, SEC Regulation Best Interest, and applicable state regulations before making any product recommendations. All client information must be independently verified.
+This analysis is for informational purposes only. WealthPlanrAI advisors must conduct their own suitability analysis in accordance with FINRA Rule 2111, SEC Regulation Best Interest, and applicable state regulations before making any product recommendations. All client information must be independently verified.
 
-RedCube Financial LLC is not a registered investment advisor or broker-dealer. This report does not establish a fiduciary relationship. Licensed advisors using this report remain solely responsible for all recommendations made to clients.
+WealthPlanrAI LLC is not a registered investment advisor or broker-dealer. This report does not establish a fiduciary relationship. Licensed advisors using this report remain solely responsible for all recommendations made to clients.
 
-© RedCube Financial LLC. Confidential. For licensed professional use only.`
+© WealthPlanrAI LLC. Confidential. For licensed professional use only.`
 
-const CLIENT_DISCLAIMER = `This financial assessment summary is prepared by RedCube Financial and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. RedCube Financial advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions.`
+const CLIENT_DISCLAIMER = `This financial assessment summary is prepared by WealthPlanrAI LLC and is for informational and educational purposes only. It does not constitute investment advice, insurance advice, legal advice, or tax advice. The information provided is based solely on self-reported data and has not been independently verified. Past performance is not indicative of future results. All investment strategies involve risk, including possible loss of principal. Insurance products and annuities involve risks and limitations — please read all product materials carefully before purchasing. WealthPlanrAI advisors may be licensed insurance agents and/or registered investment advisors. This summary does not establish an advisor-client relationship. Please consult with a licensed financial advisor, attorney, and tax professional before making any financial decisions.`
 
 // ── generateClientPDF — 4-page client-friendly summary ────────────────────────
 
@@ -406,7 +406,7 @@ export async function generateClientPDF(assessment: AssessmentForPDF): Promise<B
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...GRAY)
-    doc.text('RedCube Financial — Your Personal Financial Summary', 14, H - 8)
+    doc.text('WealthPlanrAI — Your Personal Financial Summary', 14, H - 8)
     doc.text(`Page ${pg} of 4`, W - 14, H - 8, { align: 'right' })
   }
 
@@ -420,7 +420,7 @@ export async function generateClientPDF(assessment: AssessmentForPDF): Promise<B
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(191, 219, 254)
-  doc.text('REDCUBE FINANCIAL', 14, 22)
+  doc.text('WEALTHPLANRAI', 14, 22)
 
   doc.setFontSize(28)
   doc.setTextColor(255, 255, 255)
@@ -464,14 +464,14 @@ export async function generateClientPDF(assessment: AssessmentForPDF): Promise<B
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...GRAY)
-  doc.text('Based on the RedCube Three Pillars framework', 14, 143)
+  doc.text('Based on the WealthPlanrAI Three Pillars framework', 14, 143)
   doc.text('Risk Profile: ' + capWords(assessment.riskProfile), 14, 151)
   doc.text('Completed: ' + date, 14, 158)
 
   // Intro text
   doc.setFontSize(10)
   doc.setTextColor(...DARK)
-  const intro = `Dear ${assessment.clientName.split(' ')[0]},\n\nThank you for completing your RedCube Financial health assessment. This personalized summary evaluates your financial position across our Three Pillars — PROTECT, GROW, and LEAVE A LEGACY — and provides clear, actionable steps tailored to your situation.\n\nA RedCube advisor will reach out within 1 business day to walk through your results and build your plan.`
+  const intro = `Dear ${assessment.clientName.split(' ')[0]},\n\nThank you for completing your WealthPlanrAI financial health assessment. This personalized summary evaluates your financial position across our Three Pillars — PROTECT, GROW, and LEAVE A LEGACY — and provides clear, actionable steps tailored to your situation.\n\nA WealthPlanrAI advisor will reach out within 1 business day to walk through your results and build your plan.`
   const introLines = doc.splitTextToSize(intro, W - 28) as string[]
   doc.text(introLines, 14, 175)
 
@@ -658,7 +658,7 @@ export async function generateClientPDF(assessment: AssessmentForPDF): Promise<B
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...GRAY)
-  doc.text('A RedCube advisor will contact you within 1 business day to build your personalized plan.', W / 2, y4 + 17, { align: 'center' })
+  doc.text('A WealthPlanrAI advisor will contact you within 1 business day to build your personalized plan.', W / 2, y4 + 17, { align: 'center' })
 
   // Disclaimer
   y4 += 32
@@ -699,7 +699,7 @@ export async function generateAdvisorPDF(assessment: AssessmentForPDF): Promise<
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(...GRAY)
-    doc.text(`RedCube Financial — Confidential Advisor Report — ${pageTitle}`, 14, H - 8)
+    doc.text(`WealthPlanrAI — Confidential Advisor Report — ${pageTitle}`, 14, H - 8)
     doc.text(`${assessment.clientName}  |  Page ${pg} of ${totalPages}`, W - 14, H - 8, { align: 'right' })
   }
 
@@ -742,7 +742,7 @@ export async function generateAdvisorPDF(assessment: AssessmentForPDF): Promise<
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(147, 197, 253)
-  doc.text('REDCUBE FINANCIAL — CONFIDENTIAL ADVISOR REPORT', 14, 20)
+  doc.text('WEALTHPLANRAI — CONFIDENTIAL ADVISOR REPORT', 14, 20)
 
   doc.setFontSize(22)
   doc.setTextColor(255, 255, 255)
@@ -1107,12 +1107,12 @@ export async function generateAdvisorPDF(assessment: AssessmentForPDF): Promise<
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(...DARK)
-  doc.text('RedCube Financial LLC', 14, endY)
+  doc.text('WealthPlanrAI LLC', 14, endY)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(...GRAY)
-  doc.text('contact@redcubefinancial.com', 14, endY + 7)
-  doc.text('www.redcubefinancial.com', 14, endY + 13)
+  doc.text('support@wealthplanrai.com', 14, endY + 7)
+  doc.text('www.wealthplanrai.com', 14, endY + 13)
   doc.text(`Report generated: ${date}`, 14, endY + 19)
 
   return Buffer.from(doc.output('arraybuffer'))

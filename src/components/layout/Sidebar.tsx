@@ -37,8 +37,7 @@ export function Sidebar() {
             <BarChart3 className="w-3.5 h-3.5 text-white" />
           </span>
           <div>
-            <p className="text-xs font-semibold text-brand-400 leading-none">RedCube</p>
-            <p className="text-xs text-gray-400 leading-none mt-0.5">WealthOS</p>
+            <p className="text-xs font-semibold text-brand-400 leading-none">WealthPlanr<span className="text-white">AI</span></p>
           </div>
         </div>
       </div>

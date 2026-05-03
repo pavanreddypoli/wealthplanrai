@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
           <span className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
             <BarChart3 className="w-5 h-5 text-white" />
           </span>
-          <span className="text-lg">RedCube <span className="text-brand-600">WealthOS</span></span>
+          <span className="text-lg">WealthPlanr<span className="text-brand-600">AI</span></span>
         </div>
 
         {success ? (

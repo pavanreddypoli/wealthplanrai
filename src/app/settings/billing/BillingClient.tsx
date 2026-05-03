@@ -87,7 +87,7 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
           Billing &amp; Subscription
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage your RedCube WealthOS subscription and billing details.
+          Manage your WealthPlanrAI subscription and billing details.
         </p>
       </div>
 

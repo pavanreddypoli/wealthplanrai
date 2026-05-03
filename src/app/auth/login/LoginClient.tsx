@@ -70,7 +70,7 @@ function Logo() {
       <span className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
         <BarChart3 className="w-5 h-5 text-white" />
       </span>
-      <span className="text-lg">RedCube <span className="text-brand-600">WealthOS</span></span>
+      <span className="text-lg">WealthPlanr<span className="text-brand-600">AI</span></span>
     </Link>
   )
 }
@@ -83,7 +83,7 @@ function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () =>
       <Logo />
 
       <div className="text-center mb-8">
-        <h1 className="font-heading text-3xl font-bold text-gray-900 mb-2">Welcome to RedCube WealthOS</h1>
+        <h1 className="font-heading text-3xl font-bold text-gray-900 mb-2">Welcome to WealthPlanrAI</h1>
         <p className="text-gray-500 text-base">Who are you here as today?</p>
       </div>
 
@@ -116,7 +116,7 @@ function Landing({ onSignIn, onSignUp }: { onSignIn: () => void; onSignUp: () =>
           </div>
           <h2 className="font-heading text-lg font-bold text-gray-900 mb-2">I am a financial professional</h2>
           <p className="text-sm text-gray-500 mb-5 leading-relaxed">
-            Join RedCube to manage clients, receive leads, and grow your practice.
+            Join WealthPlanrAI to manage clients, receive leads, and grow your practice.
           </p>
           <button
             onClick={onSignUp}
@@ -405,7 +405,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
       </button>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-        <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">Join RedCube as a Financial Professional</h1>
+        <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">Join WealthPlanrAI as a Financial Professional</h1>
         <p className="text-sm text-gray-500 mb-8">Create your account and start receiving client matches today.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -654,7 +654,7 @@ function ConfirmationPending({ email, onSignIn }: { email: string; onSignIn: () 
         <p className="text-xs text-gray-400 leading-relaxed">
           Didn&apos;t receive it? Check your spam folder or contact us at{' '}
           <a href="mailto:info@redcubefinancial.com" className="text-brand-600 hover:underline">
-            info@redcubefinancial.com
+            support@wealthplanrai.com
           </a>
         </p>
       </div>

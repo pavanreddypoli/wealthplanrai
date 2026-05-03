@@ -80,12 +80,12 @@ export default function HomePage() {
             Now in early access — 14-day free trial
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-gray-900">
-            The AI wealth platform<br />
-            <span className="text-brand-600">built for advisors</span>
+            AI-Powered Financial Planning<br />
+            <span className="text-brand-600">for Modern Advisors</span>
           </h1>
           <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            RedCube WealthOS combines AI-powered financial planning, compliance automation,
-            and client management in one place — so you can focus on advice, not admin.
+            WealthPlanrAI combines artificial intelligence with compliance-first financial planning —
+            helping advisors assess clients, identify gaps, and deliver personalized plans in minutes.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/assessment">
@@ -224,11 +224,11 @@ export default function HomePage() {
               <span className="w-7 h-7 rounded-md bg-brand-600 flex items-center justify-center">
                 <BarChart3 className="w-3.5 h-3.5 text-white" />
               </span>
-              <span className="font-semibold text-white">RedCube WealthOS</span>
+              <span className="font-semibold text-white">WealthPlanrAI</span>
             </div>
             <p className="text-xs text-center">
-              © {new Date().getFullYear()} RedCube WealthOS. For licensed financial advisors only.
-              Not investment advice. SEC · FINRA regulated.
+              © {new Date().getFullYear()} WealthPlanrAI Inc. For licensed financial advisors only.
+              SEC · FINRA · Reg BI compliant.
             </p>
             <div className="flex gap-6 text-sm">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

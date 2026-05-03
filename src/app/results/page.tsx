@@ -308,7 +308,7 @@ async function ResultsContent({ id }: { id: string }) {
       <section className="bg-brand-600 rounded-2xl p-8 text-center">
         <h2 className="font-heading text-2xl font-bold text-white mb-2">Ready to take action?</h2>
         <p className="text-brand-100 text-sm mb-6 max-w-md mx-auto">
-          Schedule a free 30-minute call with a RedCube advisor to build your personalized financial plan.
+          Schedule a free 30-minute call with a WealthPlanrAI advisor to build your personalized financial plan.
         </p>
         <Link
           href="/schedule"
@@ -357,7 +357,7 @@ export default async function ResultsPage({
       <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
         <Link href="/" className="flex items-center gap-2 text-[15px] text-gray-900 font-semibold">
           <span className="text-brand-600 text-lg leading-none">■</span>
-          RedCube <span className="font-bold">WealthOS</span>
+          WealthPlanr<span className="font-bold text-brand-600">AI</span>
         </Link>
         <span className="text-[11px] text-gray-400 tracking-[1.2px] uppercase">Assessment Results</span>
       </header>

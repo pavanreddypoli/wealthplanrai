@@ -34,7 +34,7 @@ export function DownloadButton({ assessmentId }: { assessmentId: string }) {
       <button
         onClick={handleDownload}
         disabled={loading}
-        className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-brand-700 hover:bg-brand-800 disabled:opacity-60 transition-colors text-white font-semibold text-sm rounded-xl border border-brand-500"
+        className="inline-flex items-center justify-center gap-2 px-6 py-2.5 w-full sm:w-auto bg-brand-700 hover:bg-brand-800 disabled:opacity-60 transition-colors text-white font-semibold text-sm rounded-xl border border-brand-500"
       >
         {loading
           ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Generating…</>

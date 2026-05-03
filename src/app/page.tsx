@@ -381,7 +381,7 @@ export default function HomePage() {
                 href="/assessment"
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: 700,
+                  padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700,
                   background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
                   color: 'white', textDecoration: 'none',
                   boxShadow: '0 8px 24px rgba(37,99,235,0.4)',
@@ -402,7 +402,7 @@ export default function HomePage() {
                 href="#features"
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: 600,
+                  padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 600,
                   background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.15)',
                   color: 'rgba(255,255,255,0.85)', textDecoration: 'none',
@@ -516,7 +516,7 @@ export default function HomePage() {
             href="/pricing"
             style={{
               flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: 700,
+              padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700,
               background: 'white', color: '#1E3A8A', textDecoration: 'none',
               transition: 'background 0.2s',
             }}
@@ -574,7 +574,7 @@ export default function HomePage() {
                 </ul>
                 <a
                   href="/pricing"
-                  className="block mt-8 text-center font-semibold text-sm py-3 px-6 rounded-xl"
+                  className="block mt-8 text-center font-semibold text-sm py-2.5 px-6 rounded-xl"
                   style={plan.highlighted
                     ? { background: 'white', color: '#1E3A8A', textDecoration: 'none' }
                     : { background: '#2563EB', color: 'white', textDecoration: 'none' }

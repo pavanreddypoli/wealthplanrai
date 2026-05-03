@@ -228,7 +228,7 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
           <button
             onClick={openBillingPortal}
             disabled={portalLoading}
-            className="flex items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-brand-300 hover:bg-brand-50 transition-all text-sm font-semibold text-gray-700 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-brand-300 hover:bg-brand-50 transition-all text-sm font-semibold text-gray-700 disabled:opacity-50"
           >
             <CreditCard className="w-5 h-5 text-brand-500" />
             {portalLoading ? 'Opening portal…' : 'Manage Billing & Invoices'}
@@ -236,7 +236,7 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
         ) : (
           <Link
             href="/pricing"
-            className="flex items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-brand-300 hover:bg-brand-50 transition-all text-sm font-semibold text-gray-700"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-brand-300 hover:bg-brand-50 transition-all text-sm font-semibold text-gray-700"
           >
             <CreditCard className="w-5 h-5 text-brand-500" />
             Add Payment Method
@@ -246,7 +246,7 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
         {plan !== 'enterprise' && (
           <Link
             href="/pricing"
-            className="flex items-center justify-center gap-2 p-4 bg-brand-600 hover:bg-brand-700 rounded-2xl shadow-sm transition-all text-sm font-semibold text-white"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 rounded-2xl shadow-sm transition-all text-sm font-semibold text-white"
           >
             <Zap className="w-5 h-5" />
             {plan === 'free' ? 'Start Free Trial' : 'Upgrade Plan'}

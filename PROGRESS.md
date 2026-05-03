@@ -62,6 +62,30 @@
 
 ---
 
+## Roadmap — Not yet built (in priority order)
+
+### High Priority
+- [ ] Subscription enforcement — paywall when trial expires
+  - PaywallOverlay component in dashboard layout
+  - Check subscription_status and trial_ends_at on every dashboard visit
+  - Block access if expired, show upgrade prompt
+  - Trial ending email reminder (customer.subscription.trial_will_end webhook)
+  - Add customer.subscription.trial_will_end to Stripe webhook events
+
+### Medium Priority
+- [ ] Custom domain setup — redcubefinancial.com instead of vercel.app
+- [ ] White-label branding for Enterprise plan
+- [ ] Admin panel — manage all advisors and clients
+- [ ] Analytics dashboard — track submissions, conversions, revenue
+
+### Low Priority
+- [ ] Client portal — let clients log in and see their own results history
+- [ ] CRM integrations — Salesforce, Redtail
+- [ ] Document upload and AI analysis
+- [ ] Multi-language support
+
+---
+
 ## Auth root cause and fix:
 - Problem: @supabase/ssr@0.3.0 had cookie encoding mismatch between browser and server client on Vercel
 - Fix: upgraded to @supabase/ssr@0.10.2

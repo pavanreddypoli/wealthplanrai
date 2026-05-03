@@ -317,7 +317,7 @@ async function ResultsContent({ id }: { id: string }) {
           Schedule Advisor Call <ArrowRight className="w-4 h-4" />
         </Link>
         <p className="text-[11px] text-brand-200 mt-4">
-          No obligation. Licensed advisors. SEC &amp; FINRA compliant.
+          No obligation. For licensed financial professionals only.
         </p>
       </section>
 

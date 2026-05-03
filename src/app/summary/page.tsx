@@ -428,14 +428,14 @@ export default async function SummaryPage({
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white hover:bg-brand-50 transition-colors text-brand-700 font-semibold text-sm rounded-xl"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-white hover:bg-brand-50 transition-colors text-brand-700 font-semibold text-sm rounded-xl w-full sm:w-auto"
             >
               Return to Home <ArrowRight className="w-4 h-4" />
             </Link>
             <DownloadButton assessmentId={row.id} />
           </div>
           <p className="text-[11px] text-brand-200 mt-4">
-            No obligation. Licensed advisors. SEC &amp; FINRA compliant.
+            No obligation. For licensed financial professionals only.
           </p>
         </section>
 

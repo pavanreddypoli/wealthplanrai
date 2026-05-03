@@ -183,7 +183,7 @@ function AnimatedDashboard() {
         }}
       >
         <p style={{ color: 'white', fontSize: '10px', fontWeight: 700 }}>AI Powered</p>
-        <p style={{ color: '#BFDBFE', fontSize: '9px' }}>FINRA Compliant</p>
+        <p style={{ color: '#BFDBFE', fontSize: '9px' }}>For Licensed Advisors</p>
       </div>
 
       {/* Floating badge — Reports */}
@@ -208,14 +208,14 @@ const FEATURES = [
     gradient: 'linear-gradient(135deg, #667eea, #764ba2)',
     shadow: 'rgba(102,126,234,0.4)',
     title: 'AI-Powered Analysis',
-    desc: 'Claude AI analyzes all 9 financial dimensions and generates compliance-ready plans in minutes.',
+    desc: 'Claude AI analyzes all 9 financial dimensions and generates professionally formatted plans in minutes.',
   },
   {
     icon: '🛡️',
     gradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
     shadow: 'rgba(245,87,108,0.4)',
-    title: 'FINRA & SEC Compliant',
-    desc: 'Every report includes proper disclaimers, Reg BI language, and audit-ready documentation.',
+    title: 'Compliance-Aware Documentation',
+    desc: 'Every report includes proper disclaimers, Reg BI language templates, and documentation designed for licensed professionals.',
   },
   {
     icon: '📊',
@@ -283,11 +283,11 @@ const STEPS = [
 ]
 
 const BADGES = [
-  { icon: '🏛️', label: 'SEC Compliant' },
-  { icon: '⚖️', label: 'FINRA Registered' },
-  { icon: '🔒', label: 'Bank-level Security' },
-  { icon: '📜', label: 'Reg BI Ready' },
-  { icon: '🛡️', label: 'SOC 2 Infrastructure' },
+  { icon: '🏛️', label: 'Built for SEC-Regulated Advisors' },
+  { icon: '⚖️', label: 'FINRA Rule 2111 Aware' },
+  { icon: '🔒', label: 'Encrypted Data Storage' },
+  { icon: '📜', label: 'Reg BI Disclaimer Templates' },
+  { icon: '🛡️', label: 'Enterprise-grade Infrastructure' },
 ]
 
 const PLANS = [
@@ -305,7 +305,7 @@ const PLANS = [
     price: '$399',
     period: '/mo',
     description: 'Growing RIA firms',
-    features: ['Everything in Starter', 'Tax-loss harvesting', 'Full compliance center', 'Unlimited reports', 'Document analysis'],
+    features: ['Everything in Starter', 'Tax-loss harvesting', 'Compliance documentation tools', 'Unlimited reports', 'Document analysis'],
     cta: 'Start free trial',
     highlighted: true,
   },
@@ -407,9 +407,9 @@ export default function HomePage() {
             {/* Stats row */}
             <div className="flex flex-wrap gap-8 justify-center lg:justify-start mb-10">
               {[
-                { num: '9',    label: 'Assessment sections' },
-                { num: '3',    label: 'AI-powered pillars'  },
-                { num: '100%', label: 'FINRA compliant'     },
+                { num: '9',   label: 'Assessment sections'        },
+                { num: '3',   label: 'AI-powered pillars'         },
+                { num: '14+', label: 'Disclaimer templates'       },
               ].map(s => (
                 <div key={s.label} className="text-center lg:text-left">
                   <p className="text-2xl font-bold text-white">{s.num}</p>
@@ -476,10 +476,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { num: '500+',   label: 'Assessments completed'  },
-              { num: '98%',    label: 'Client satisfaction'     },
-              { num: '14 min', label: 'Avg assessment time'     },
-              { num: '100%',   label: 'FINRA compliant outputs' },
+              { num: '500+',   label: 'Assessments completed'          },
+              { num: '98%',    label: 'Client satisfaction'           },
+              { num: '14 min', label: 'Avg assessment time'           },
+              { num: '14+',    label: 'Regulatory disclaimer templates' },
             ].map(s => (
               <div key={s.label}>
                 <p className="text-3xl font-bold text-gray-900">{s.num}</p>
@@ -626,12 +626,12 @@ export default function HomePage() {
           <div className="text-white text-center lg:text-left">
             <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 bounce-slow" />
-              <span className="text-sm font-semibold uppercase tracking-wide opacity-80">Compliance built in</span>
+              <span className="text-sm font-semibold uppercase tracking-wide opacity-80">Compliance-aware documentation</span>
             </div>
-            <h2 className="text-2xl font-bold">SEC · FINRA · Reg BI · CFPB</h2>
+            <h2 className="text-2xl font-bold">Designed for SEC & FINRA regulated advisors</h2>
             <p className="mt-2 text-blue-100 max-w-xl">
               Every AI response, client report, and generated document automatically includes
-              required regulatory disclaimers — reviewed and updated quarterly.
+              regulatory disclaimer templates — reviewed and updated quarterly.
             </p>
             {/* Trust badges */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
@@ -761,6 +761,31 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Regulatory Disclosure */}
+      <div style={{
+        background: '#F8FAFC',
+        borderTop: '1px solid #E2E8F0',
+        padding: '24px',
+        textAlign: 'center',
+      }}>
+        <p style={{
+          fontSize: '11px',
+          color: '#94A3B8',
+          maxWidth: '800px',
+          margin: '0 auto',
+          lineHeight: '1.7',
+        }}>
+          <strong style={{ color: '#64748B' }}>Important Disclosure:</strong>{' '}
+          WealthPlanrAI is a technology platform for licensed financial professionals only.
+          We are not a registered investment advisor, broker-dealer, or FINRA member.
+          This platform does not constitute investment advice. Licensed advisors using
+          this platform are solely responsible for their own regulatory compliance,
+          client suitability determinations, and adherence to applicable FINRA, SEC,
+          and state regulations. All AI-generated content must be reviewed by a
+          licensed professional before use with clients.
+        </p>
+      </div>
+
       {/* Footer */}
       <footer className="bg-slate-900 text-gray-400 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -772,8 +797,7 @@ export default function HomePage() {
               <span className="font-semibold text-white">WealthPlanrAI</span>
             </div>
             <p className="text-xs text-center">
-              © {new Date().getFullYear()} WealthPlanrAI Inc. For licensed financial advisors only.
-              SEC · FINRA · Reg BI compliant.
+              © {new Date().getFullYear()} WealthPlanrAI Inc. For licensed financial professionals only.
             </p>
             <div className="flex gap-6 text-sm">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

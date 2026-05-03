@@ -35,7 +35,7 @@ const FAQ = [
   },
   {
     q: 'Is my data secure?',
-    a: 'Yes. All data is encrypted in transit and at rest. Our infrastructure is SOC 2 Type II compliant.',
+    a: 'Yes. All data is encrypted in transit and at rest on enterprise-grade infrastructure.',
   },
 ]
 

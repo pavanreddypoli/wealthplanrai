@@ -1,72 +1,105 @@
 # RedCube WealthOS — Build Progress
 
-## Last updated: May 3, 2026 (session 3)
+## Last updated: May 3, 2026 (session 4)
 
-## What is built and working (latest additions at top):
-- Full mobile responsiveness: hamburger drawer on dashboard, card view for client table, stacked layouts on all pages
-- Company email multi-recipient: sends to COMPANY_EMAIL + COMPANY_BACKUP_EMAIL, survives SpamCop RBL
-- Stripe webhook fully implemented: checkout.session.completed, subscription.updated/deleted, invoice.payment_failed
-- Plan activation on checkout: profiles.plan + stripe_customer_id/subscription_id updated via webhook
-- Upgrade success banner on /dashboard?upgraded=true after Stripe checkout
-- Next.js 14 app with App Router deployed on Vercel
-- Supabase database with migrations 001-007 (run 006, 007 in Supabase)
-- Authentication: signup, signin, signout using @supabase/ssr@0.10.2
-- Multi-step 9-section financial assessment form
-- Financial scoring engine (src/lib/scoring.ts) with sub-scores
-- Three Pillars summary page (/summary) — Protect, Grow, Leave a Legacy
-- PDF generation for clients and advisors (src/lib/generatePDF.ts)
-- Email system via SendGrid (src/lib/email.ts) — client, advisor, company emails
-- Advisor self-registration flow (/auth/login MODE 3)
-- Advisor dropdown on summary page for client to select advisor
-- Advisor CRM dashboard (/dashboard) with assessment table and notes panel
-- Results page (/results) with score breakdown
-- Pricing page (/pricing) with Stripe checkout buttons
-- Light blue design system with Inter + Sora fonts
-- Mobile friendly layout
+---
+
+## Completed and working (latest additions at top):
+
+### Session 4 (May 3, 2026)
+- [x] Homepage CTAs fixed: compliance callout + pricing section buttons now link to /pricing (not /assessment)
+- [x] Pricing page CheckoutButton: unauthenticated users redirected to /auth/login?redirectTo=/pricing (returns to pricing after login)
+- [x] Billing portal page (/settings/billing) — plan details, status badges, trial countdown, Stripe portal link, upgrade CTA
+- [x] Stripe portal API (/api/stripe/portal) — full error handling, descriptive 400 for missing customer
+- [x] Password reset flow — Forgot password link → ForgotPassword component → /auth/reset-password page
+- [x] Full mobile responsiveness — hamburger drawer on dashboard, card view for assessment table, stacked layouts on all pages
+
+### Session 3 (May 3, 2026)
+- [x] Company email multi-recipient: sends to COMPANY_EMAIL + COMPANY_BACKUP_EMAIL, survives SpamCop RBL
+- [x] Stripe webhook fully implemented: checkout.session.completed, subscription.updated/deleted, invoice.payment_failed
+- [x] Plan activation on checkout: profiles.plan + stripe_customer_id/subscription_id updated via webhook
+- [x] Upgrade success banner on /dashboard?upgraded=true after Stripe checkout
+
+### Earlier sessions
+- [x] Next.js 14 app with App Router deployed on Vercel
+- [x] Supabase database with migrations 001–007
+- [x] Authentication: signup, signin, signout using @supabase/ssr@0.10.2
+- [x] Multi-step 9-section financial assessment form
+- [x] Financial scoring engine (src/lib/scoring.ts) with sub-scores
+- [x] Three Pillars summary page (/summary) — Protect, Grow, Leave a Legacy
+- [x] PDF generation for clients and advisors (src/lib/generatePDF.ts)
+- [x] Email system via SendGrid (src/lib/email.ts) — client, advisor, company emails
+- [x] Advisor self-registration flow (/auth/login MODE 3)
+- [x] Advisor dropdown on summary page for client to select advisor
+- [x] Advisor CRM dashboard (/dashboard) with assessment table, notes panel, tab filters
+- [x] Results page (/results) with score breakdown
+- [x] Pricing page (/pricing) with Stripe checkout buttons (start free trial)
+- [x] Light blue design system with Inter + Sora fonts
+
+---
+
+## What still needs to be done:
+
+### Manual configuration (user action required — no code needed):
+- [ ] Add `COMPANY_BACKUP_EMAIL` in Vercel env variables (Gmail backup address)
+- [ ] Register Stripe webhook endpoint in Stripe Dashboard (see instructions below)
+- [ ] Add `STRIPE_WEBHOOK_SECRET` to Vercel env variables after webhook creation
+- [ ] Add `https://redcube-wealthos.vercel.app/auth/reset-password` to Supabase allowed redirect URLs
+- [ ] Run migration 006 and 007 in Supabase SQL editor if not already done
+
+### Testing / verification (needs production environment):
+- [ ] Test full assessment → summary → email flow end to end on production
+- [ ] Verify PDF emails arrive at client and advisor email addresses
+- [ ] Verify advisor dropdown shows registered advisors
+- [ ] Test password reset flow end to end (requires Supabase redirect URL above)
+- [ ] Test Stripe checkout → plan activation → billing portal on production
+- [ ] Verify upgrade success banner appears after Stripe checkout
+
+### Remaining features to build:
+- [ ] White-label branding for Enterprise plan
+- [ ] Compliance audit trail for Enterprise plan
+- [ ] SSO / Active Directory for Enterprise plan
+
+---
 
 ## Auth root cause and fix:
-- Problem: @supabase/ssr@0.3.0 had cookie encoding mismatch between
-  browser and server client on Vercel
+- Problem: @supabase/ssr@0.3.0 had cookie encoding mismatch between browser and server client on Vercel
 - Fix: upgraded to @supabase/ssr@0.10.2
 - Pattern: browser client signin + router.refresh() + router.push()
 - Middleware uses official Supabase SSR pattern with broad matcher
 
-## What still needs to be built:
-- [ ] Test full assessment → summary → email flow end to end on production
-- [ ] Verify PDF emails arrive at client and advisor emails
-- [ ] Verify advisor dropdown shows registered advisors
-- [ ] Add COMPANY_BACKUP_EMAIL in Vercel env variables (Gmail backup address)
-- [ ] Register Stripe webhook endpoint in Stripe Dashboard (see instructions below)
-- [ ] Add STRIPE_WEBHOOK_SECRET to Vercel env variables after Stripe webhook creation
-- [ ] Full advisor dashboard with real client data
-- [ ] Billing portal page (/settings/billing)
-- [ ] Run migration 006 and 007 in Supabase if not done
-- [ ] White-label branding for Enterprise plan
-- [ ] Password reset flow
-- [x] Mobile responsiveness implemented — test on real devices to verify
+---
 
 ## Stripe webhook setup (required for plan activation):
 Go to stripe.com → Developers → Webhooks → Add endpoint
-Endpoint URL: https://redcube-wealthos.vercel.app/api/stripe/webhook
+Endpoint URL: `https://redcube-wealthos.vercel.app/api/stripe/webhook`
 Events to listen for:
-- checkout.session.completed
-- customer.subscription.updated
-- customer.subscription.deleted
-- invoice.payment_failed
-After adding, copy Signing Secret → add to Vercel as STRIPE_WEBHOOK_SECRET=whsec_...
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_failed`
+
+After adding, copy Signing Secret → add to Vercel as `STRIPE_WEBHOOK_SECRET=whsec_...`
+
+---
 
 ## Key environment variables needed in Vercel:
-- NEXT_PUBLIC_SUPABASE_URL
-- NEXT_PUBLIC_SUPABASE_ANON_KEY
-- SUPABASE_SERVICE_ROLE_KEY
-- NEXT_PUBLIC_APP_URL = https://redcube-wealthos.vercel.app
-- SENDGRID_API_KEY
-- SENDGRID_FROM_EMAIL = info@redcubefinancial.com
-- COMPANY_EMAIL = info@redcubefinancial.com
-- STRIPE_SECRET_KEY
-- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-- STRIPE_WEBHOOK_SECRET (from Stripe webhook signing secret)
-- COMPANY_BACKUP_EMAIL (Gmail backup, e.g. yourname@gmail.com)
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_APP_URL` = https://redcube-wealthos.vercel.app
+- `SENDGRID_API_KEY`
+- `SENDGRID_FROM_EMAIL` = info@redcubefinancial.com
+- `COMPANY_EMAIL` = info@redcubefinancial.com
+- `COMPANY_BACKUP_EMAIL` = (Gmail backup, e.g. yourname@gmail.com)
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET` (from Stripe webhook signing secret — add after webhook registration)
+- `STRIPE_STARTER_PRICE_ID`
+- `STRIPE_PROFESSIONAL_PRICE_ID`
+- `STRIPE_ENTERPRISE_PRICE_ID`
+
+---
 
 ## GitHub repo:
 https://github.com/pavanreddypoli/redcube-wealthos
@@ -76,5 +109,4 @@ https://redcube-wealthos.vercel.app
 
 ## Database:
 Supabase project: gvrycagcpyqhrixyscnc
-Tables: profiles, assessments, assessment_answers, advisor_notes,
-        clients, compliance_items, firms
+Tables: profiles, assessments, assessment_answers, advisor_notes, clients, compliance_items, firms

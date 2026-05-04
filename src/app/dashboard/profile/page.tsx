@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { DashboardShell } from '@/components/layout/DashboardShell'
 
 const EXPERIENCE_OPTIONS = ['0–2 years', '3–5 years', '6–10 years', '11–20 years', '20+ years']
 
@@ -110,17 +109,14 @@ export default function AdvisorProfilePage() {
 
   if (loading) {
     return (
-      <DashboardShell userEmail={userEmail}>
-        <div className="flex items-center justify-center h-64">
-          <span className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      </DashboardShell>
+      <div className="flex items-center justify-center h-64">
+        <span className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+      </div>
     )
   }
 
   return (
-    <DashboardShell userEmail={userEmail}>
-      <div className="max-w-xl mx-auto px-6 py-8">
+    <div className="max-w-xl mx-auto px-6 py-8">
 
         <div className="mb-6">
           <h1 className="font-heading text-xl font-bold text-gray-900 mb-1">My Advisor Profile</h1>
@@ -207,7 +203,7 @@ export default function AdvisorProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               {saving
                 ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</>
@@ -219,6 +215,5 @@ export default function AdvisorProfilePage() {
         </div>
 
       </div>
-    </DashboardShell>
   )
 }

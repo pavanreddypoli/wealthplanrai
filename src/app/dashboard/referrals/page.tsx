@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { DollarSign, Users, Clock, TrendingUp } from 'lucide-react'
-import { DashboardShell } from '@/components/layout/DashboardShell'
 import { CopyButton } from './CopyButton'
 
 export const dynamic = 'force-dynamic'
@@ -61,11 +60,7 @@ export default async function ReferralsPage() {
     : ''
 
   return (
-    <DashboardShell
-      userEmail={user.email}
-      userName={profile?.full_name}
-      advisorType={profile?.advisor_type}
-    >
+    <div>
       <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs text-gray-500 flex items-center gap-2">
         <a href="/dashboard" className="hover:text-blue-600 transition-colors">Dashboard</a>
         <span>→</span>
@@ -235,6 +230,6 @@ export default async function ReferralsPage() {
           )}
         </div>
       </div>
-    </DashboardShell>
+    </div>
   )
 }

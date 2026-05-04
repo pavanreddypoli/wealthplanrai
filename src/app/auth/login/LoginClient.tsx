@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BarChart3, ArrowLeft, ArrowRight, User, Briefcase, Mail } from 'lucide-react'
+import { ConsentGate } from '@/components/ConsentGate'
+import { ADVISOR_AGREEMENT_ITEMS } from '@/lib/wealthplanr/compliance-module'
 
 type Mode = 'landing' | 'signin' | 'signup' | 'confirmation' | 'forgot'
 
@@ -338,12 +340,26 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [duplicateData,     setDuplicateData]     = useState<DuplicateData | null>(null)
   const [upgradeLoading,    setUpgradeLoading]    = useState(false)
-  const [discountCode,      setDiscountCode]      = useState(initialDiscountCode ?? '')
-  const [discountResult,    setDiscountResult]    = useState<DiscountResult | null>(null)
-  const [validatingCode,    setValidatingCode]    = useState(false)
+  const [discountCode,       setDiscountCode]      = useState(initialDiscountCode ?? '')
+  const [discountResult,     setDiscountResult]    = useState<DiscountResult | null>(null)
+  const [validatingCode,     setValidatingCode]    = useState(false)
+  const [signupStep,         setSignupStep]        = useState<1 | 2 | 3>(1)
+  const [advisorAgreement,   setAdvisorAgreement]  = useState<unknown[] | null>(null)
 
   function set(field: keyof SignupForm, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))
+  }
+
+  async function handleAgreementAccept(keys: string[]) {
+    const res = await fetch('/api/consent/advisor', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ acknowledgedKeys: keys, email: form.email }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? 'Agreement failed')
+    setAdvisorAgreement(json.advisor_agreement)
+    setSignupStep(3)
   }
 
   async function validateCode() {
@@ -385,7 +401,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, advisor_agreement: advisorAgreement ?? [] }),
       })
       const data = await res.json() as {
         error?: string
@@ -481,10 +497,26 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
     }
   }
 
+  // Step 2 — advisor agreement gate (full-page, outside the card)
+  if (signupStep === 2) return (
+    <ConsentGate
+      variant="advisor_agreement"
+      title="Advisor Platform Agreement"
+      subtitle="Before creating your account, please review and acknowledge each of the following."
+      items={ADVISOR_AGREEMENT_ITEMS}
+      onAccept={handleAgreementAccept}
+      onCancel={() => setSignupStep(1)}
+      acceptLabel="I Accept — Continue to Signup"
+    />
+  )
+
   return (
     <div className="w-full max-w-xl">
       <Logo />
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors">
+      <button
+        onClick={signupStep === 3 ? () => setSignupStep(2) : onBack}
+        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
 
@@ -527,20 +559,38 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
           </div>
         )}
 
+        {signupStep === 1 && (
+          <div className="space-y-6">
+            <div>
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Account</p>
+              <div className="space-y-4">
+                <Field label="Full Name">
+                  <TextInput type="text" required placeholder="Jane Smith"
+                    value={form.full_name} onChange={e => set('full_name', e.target.value)} />
+                </Field>
+                <Field label="Email Address">
+                  <TextInput type="email" autoComplete="email" required placeholder="you@firm.com"
+                    value={form.email} onChange={e => set('email', e.target.value)} />
+                </Field>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={!form.full_name.trim() || !form.email.trim()}
+              onClick={() => setSignupStep(2)}
+              className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              Continue <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {signupStep === 3 && (
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* Section 1: Account */}
           <div>
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Account</p>
             <div className="space-y-4">
-              <Field label="Full Name">
-                <TextInput type="text" required placeholder="Jane Smith"
-                  value={form.full_name} onChange={e => set('full_name', e.target.value)} />
-              </Field>
-              <Field label="Email Address">
-                <TextInput type="email" autoComplete="email" required placeholder="you@firm.com"
-                  value={form.email} onChange={e => set('email', e.target.value)} />
-              </Field>
               <Field label="Password">
                 <TextInput type="password" autoComplete="new-password" required placeholder="Minimum 8 characters"
                   value={form.password} onChange={e => set('password', e.target.value)} />
@@ -711,6 +761,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
             </p>
           )}
         </form>
+        )}
       </div>
 
       <p className="mt-6 text-xs text-gray-400 text-center">

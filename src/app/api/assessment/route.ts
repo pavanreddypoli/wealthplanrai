@@ -4,6 +4,12 @@ import { scoreAssessment } from '@/lib/scoring'
 import { analyzeIntake } from '@/lib/wealthplanr/intake-analysis-engine'
 import { translateForClient } from '@/lib/wealthplanr/client-view-translator'
 import { flatAnswersToProfile } from '@/lib/wealthplanr/adapter'
+import {
+  INTAKE_CONSENT_ITEMS,
+  newAuditTrail,
+  recordEvent,
+  type DisclosureAcknowledgment,
+} from '@/lib/wealthplanr/compliance-module'
 
 // ─── Risk scoring (investment profile) ───────────────────────────────────────
 
@@ -193,6 +199,14 @@ export async function POST(request: NextRequest) {
     const supabase  = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Consent gate validation — required before any processing
+    const required = INTAKE_CONSENT_ITEMS.filter(c => c.required).map(c => c.key)
+    const provided = new Set((body.intake_consents ?? []).map((c: any) => c.disclosureKey))
+    const missing  = required.filter(k => !provided.has(k))
+    if (missing.length > 0) {
+      return NextResponse.json({ error: 'consent_required', missing }, { status: 403 })
+    }
+
     const riskScore  = computeRiskScore(answers)
     const risk_profile = getRiskProfile(riskScore)
     const recommended_allocation = getAllocation(risk_profile)
@@ -225,6 +239,7 @@ export async function POST(request: NextRequest) {
         score_results,
         intake_analysis,
         client_summary,
+        intake_consents:        body.intake_consents ?? null,
         status:                 'submitted',
       })
       .select('id')
@@ -233,6 +248,20 @@ export async function POST(request: NextRequest) {
     if (assessmentError) {
       console.error('Assessment insert error:', assessmentError)
       throw assessmentError
+    }
+
+    // Build and persist audit trail
+    try {
+      const trail = newAuditTrail({ assessmentId: assessment.id, userId: user?.id })
+      for (const c of (body.intake_consents ?? []) as DisclosureAcknowledgment[]) {
+        trail.consents.push(c)
+        trail.events.push({ type: 'consent', at: c.acknowledgedAt ?? new Date().toISOString(), metadata: { disclosureKey: c.disclosureKey } })
+      }
+      recordEvent(trail, 'assessment_completed')
+      recordEvent(trail, 'report_generated')
+      await supabase.from('assessments').update({ audit_trail: trail }).eq('id', assessment.id)
+    } catch (trailErr) {
+      console.error('[assessment] audit trail error (non-fatal):', trailErr)
     }
 
     // 2. Insert normalized per-section rows into assessment_answers

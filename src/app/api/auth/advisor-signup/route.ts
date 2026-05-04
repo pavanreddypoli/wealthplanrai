@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { ADVISOR_AGREEMENT_ITEMS } from '@/lib/wealthplanr/compliance-module'
 
 function anonClient() {
   return createClient(
@@ -33,12 +34,23 @@ export async function POST(req: NextRequest) {
       years_experience: string
       is_accepting_clients: boolean
       upgradeExistingId?: string
+      advisor_agreement?: unknown[]
     }
 
     const {
       full_name, email, password, advisor_type, advisor_specialty,
       phone, bio, years_experience, is_accepting_clients,
     } = body
+
+    // Advisor agreement validation — required for new signups (skip for upgrade flow)
+    if (!body.upgradeExistingId) {
+      const required = ADVISOR_AGREEMENT_ITEMS.filter(c => c.required).map(c => c.key)
+      const provided = new Set((body.advisor_agreement ?? []).map((c: any) => c.disclosureKey))
+      const missing  = required.filter(k => !provided.has(k))
+      if (missing.length > 0) {
+        return NextResponse.json({ error: 'agreement_required', missing }, { status: 403 })
+      }
+    }
 
     const advisorType = TYPE_MAP[advisor_type] ?? 'advisor'
     const admin = adminClient()
@@ -151,6 +163,7 @@ export async function POST(req: NextRequest) {
         plan:                 'professional',
         subscription_status:  'trialing',
         trial_ends_at:        trialEndsAt,
+        advisor_agreement:    body.advisor_agreement ?? null,
       })
       .eq('id', data.user.id)
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { FOOTER_DISCLAIMER } from '@/lib/wealthplanr/compliance-module'
 
 export const metadata: Metadata = {
   title: { default: 'WealthPlanrAI — AI-Powered Financial Planning', template: '%s | WealthPlanrAI' },
@@ -21,7 +22,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        <footer className="border-t border-gray-100 bg-gray-50">
+          <div className="max-w-5xl mx-auto px-6 py-3">
+            <p className="text-xs text-gray-400 leading-relaxed">{FOOTER_DISCLAIMER}</p>
+          </div>
+        </footer>
+      </body>
     </html>
   )
 }

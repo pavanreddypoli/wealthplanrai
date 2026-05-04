@@ -1,7 +1,9 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ConsentGate } from '@/components/ConsentGate'
+import { INTAKE_CONSENT_ITEMS } from '@/lib/wealthplanr/compliance-module'
 
 interface FormData {
   firstName: string; lastName: string; email: string; phone: string
@@ -218,6 +220,8 @@ function Logo() {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AssessmentPage() {
+  const [consentAccepted, setConsentAccepted] = useState(false)
+  const [intakeConsents,  setIntakeConsents]  = useState<unknown[] | null>(null)
   const [step,setStep]         = useState(0)
   const [data,setData]         = useState<FormData>(INIT)
   const [errs,setErrs]         = useState<string[]>([])
@@ -225,6 +229,38 @@ export default function AssessmentPage() {
   const [loading,setLoading]   = useState(false)
   const [done,setDone]         = useState(false)
   const router = useRouter()
+
+  // Restore consent from sessionStorage (24h max age)
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('wp_intake_consents')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Date.now() - (parsed.timestamp ?? 0) < 24 * 60 * 60 * 1000) {
+          setIntakeConsents(parsed.consents)
+          setConsentAccepted(true)
+        } else {
+          sessionStorage.removeItem('wp_intake_consents')
+        }
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  async function handleConsentAccept(keys: string[]) {
+    const res  = await fetch('/api/consent/intake', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ acknowledgedKeys: keys }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? 'Consent failed')
+    const consents = json.intake_consents
+    setIntakeConsents(consents)
+    setConsentAccepted(true)
+    try {
+      sessionStorage.setItem('wp_intake_consents', JSON.stringify({ consents, timestamp: Date.now() }))
+    } catch { /* ignore */ }
+  }
 
   const s = useCallback(<K extends keyof FormData>(k:K,v:FormData[K]) => {
     setData(p=>({...p,[k]:v})); setErrs([]); setApiError('')
@@ -244,17 +280,34 @@ export default function AssessmentPage() {
     try {
       const res = await fetch('/api/assessment',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({answers:data,score:75,risk_profile:data.riskTolerance||'moderate'}),
+        body:JSON.stringify({answers:data,score:75,risk_profile:data.riskTolerance||'moderate',intake_consents:intakeConsents}),
       })
       const json = await res.json()
-      if (json.id) router.push(`/summary?id=${json.id}`)
-      else setDone(true)
+      if (json.id) {
+        try { sessionStorage.removeItem('wp_intake_consents') } catch { /* ignore */ }
+        router.push(`/summary?id=${json.id}`)
+      } else setDone(true)
     } catch {
       setApiError("Something went sideways on our end — your answers are safe, please try submitting again")
     } finally { setLoading(false) }
   }
 
   const pct = ((step+1)/STEPS.length)*100
+
+  // ── Consent gate ───────────────────────────────────────────────────────────
+
+  if (!consentAccepted) return (
+    <ConsentGate
+      variant="client_intake"
+      title="Before we begin"
+      subtitle="Please review and acknowledge each item below. WealthPlanrAI is an educational platform — not a financial advisor."
+      items={INTAKE_CONSENT_ITEMS}
+      onAccept={handleConsentAccept}
+      onCancel={() => router.push('/')}
+      acceptLabel="I Understand — Start My Assessment"
+      disclaimerNote="Your acknowledgments are recorded with a timestamp. This gate appears once per 24-hour session."
+    />
+  )
 
   // ── Done screen ────────────────────────────────────────────────────────────
 

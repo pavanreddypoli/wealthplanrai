@@ -113,8 +113,8 @@ export async function POST(req: NextRequest) {
       email:    normalizedEmail,
       password, // passed exactly as received — never trim or transform
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/auth/callback`,
-        data: { full_name },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/auth/confirm`,
+        data: { full_name, advisor_type: advisorType },
       },
     })
 

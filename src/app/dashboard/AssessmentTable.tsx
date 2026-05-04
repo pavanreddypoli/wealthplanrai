@@ -248,11 +248,13 @@ export function AssessmentTable({
   currentUserId,
   currentUserRole,
   upgraded = false,
+  showOnlyMyClients = false,
 }: {
   initialAssessments: AssessmentRow[]
   currentUserId: string | null
   currentUserRole: string | null
   upgraded?: boolean
+  showOnlyMyClients?: boolean
 }) {
   const router = useRouter()
 
@@ -441,7 +443,7 @@ export function AssessmentTable({
         </div>
 
         {/* ── Tabs ──────────────────────────────────────────────────── */}
-        <div className="overflow-x-auto -mx-1 px-1">
+        {!showOnlyMyClients && <div className="overflow-x-auto -mx-1 px-1">
           <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl w-fit min-w-max">
             {tabs.map(t => (
               <button
@@ -462,7 +464,7 @@ export function AssessmentTable({
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* ── Table / Empty state ────────────────────────────────────── */}
         {initialAssessments.length === 0 ? (

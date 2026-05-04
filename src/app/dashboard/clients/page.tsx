@@ -1,20 +1,75 @@
-import { Users } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { AssessmentTable } from '../AssessmentTable'
+import { computePillars } from '../page'
+import type { AssessmentRow } from '../page'
 
-export default function ClientsPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function ClientsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, advisor_type')
+    .eq('id', user.id)
+    .single()
+
+  const [assessmentsResult, noteRowsResult] = await Promise.all([
+    supabase
+      .from('assessments')
+      .select('id, full_name, email, created_at, score, risk_profile, score_results, status, assigned_advisor_id, selected_advisor_id')
+      .or(`selected_advisor_id.eq.${user.id},assigned_advisor_id.eq.${user.id}`)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('advisor_notes')
+      .select('assessment_id'),
+  ])
+
+  const noteCounts: Record<string, number> = {}
+  for (const row of noteRowsResult.data ?? []) {
+    if (row.assessment_id) {
+      noteCounts[row.assessment_id] = (noteCounts[row.assessment_id] ?? 0) + 1
+    }
+  }
+
+  const rows: AssessmentRow[] = (assessmentsResult.data ?? []).map(a => {
+    const raw = a as Record<string, unknown>
+    const scoreResults = raw.score_results as import('@/lib/scoring').ScoreResults | null ?? null
+    const pillars = computePillars(scoreResults)
+    return {
+      id:                  a.id,
+      full_name:           raw.full_name as string | null ?? null,
+      email:               raw.email as string | null ?? null,
+      created_at:          a.created_at,
+      score:               raw.score as number ?? 0,
+      risk_profile:        raw.risk_profile as string ?? 'moderate',
+      score_results:       scoreResults,
+      status:              raw.status as string | null ?? null,
+      assigned_advisor_id: raw.assigned_advisor_id as string | null ?? null,
+      selected_advisor_id: raw.selected_advisor_id as string | null ?? null,
+      note_count:          noteCounts[a.id] ?? 0,
+      protect_score:       pillars.protect,
+      grow_score:          pillars.grow,
+      legacy_score:        pillars.legacy,
+    }
+  })
+
   return (
-    <div className="p-6">
-      <header className="bg-white border-b border-gray-200 px-6 h-14 flex items-center -mx-6 -mt-6 mb-6">
-        <h1 className="font-heading text-base font-semibold text-gray-900">Clients</h1>
-      </header>
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-24 gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-          <Users className="w-7 h-7 text-slate-300" />
-        </div>
-        <div className="text-center">
-          <p className="text-base font-semibold text-gray-700">Client management coming soon</p>
-          <p className="text-sm text-gray-400 mt-1">View and manage all your clients in one place.</p>
-        </div>
+    <div>
+      <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs text-gray-500 flex items-center gap-2">
+        <a href="/dashboard" className="hover:text-blue-600 transition-colors">Dashboard</a>
+        <span>→</span>
+        <span className="text-gray-900 font-medium">Clients</span>
       </div>
+      <AssessmentTable
+        initialAssessments={rows}
+        currentUserId={user.id}
+        currentUserRole={profile?.advisor_type ?? null}
+        showOnlyMyClients={true}
+      />
     </div>
   )
 }

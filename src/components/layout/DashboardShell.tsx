@@ -6,18 +6,18 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Users, ClipboardList, BarChart3,
   Settings, LogOut, Menu, X, CreditCard, UserCircle,
-  DollarSign, ShieldCheck,
+  DollarSign, ShieldCheck, Link as LinkIcon, Check,
 } from 'lucide-react'
 
 const NAV = [
-  { label: 'Dashboard',   href: '/dashboard',            icon: LayoutDashboard },
-  { label: 'Clients',     href: '/dashboard/clients',    icon: Users },
-  { label: 'Assessments', href: '/assessment',           icon: ClipboardList },
-  { label: 'Reports',     href: '/dashboard/reports',    icon: BarChart3 },
-  { label: 'My Profile',  href: '/dashboard/profile',    icon: UserCircle },
-  { label: 'Referrals',   href: '/dashboard/referrals',  icon: DollarSign },
-  { label: 'Settings',    href: '/dashboard/settings',   icon: Settings },
-  { label: 'Billing',     href: '/settings/billing',     icon: CreditCard },
+  { label: 'Dashboard',           href: '/dashboard',           icon: LayoutDashboard, description: 'Overview and recent activity' },
+  { label: 'Client Assessments',  href: '/dashboard',           icon: ClipboardList,   description: 'All client submissions' },
+  { label: 'Clients',             href: '/dashboard/clients',   icon: Users,           description: 'Client management' },
+  { label: 'Reports',             href: '/dashboard/reports',   icon: BarChart3,       description: 'Download and view reports' },
+  { label: 'My Profile',          href: '/dashboard/profile',   icon: UserCircle,      description: 'Your advisor profile' },
+  { label: 'Referrals',           href: '/dashboard/referrals', icon: DollarSign,      description: 'Referral links and commissions' },
+  { label: 'Billing',             href: '/settings/billing',    icon: CreditCard,      description: 'Subscription and billing' },
+  { label: 'Settings',            href: '/dashboard/settings',  icon: Settings,        description: 'Account settings' },
 ]
 
 interface Props {
@@ -31,6 +31,7 @@ interface Props {
 export function DashboardShell({ children, userEmail, userName, advisorType, isAdmin }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const displayName = userName ?? userEmail?.split('@')[0] ?? 'Advisor'
   const initials = userName
@@ -40,11 +41,31 @@ export function DashboardShell({ children, userEmail, userName, advisorType, isA
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === '/dashboard' : pathname === href || pathname.startsWith(href + '/')
 
+  function handleCopyAssessmentLink() {
+    const url = (typeof window !== 'undefined' ? window.location.origin : 'https://wealthplanrai.vercel.app') + '/assessment'
+    navigator.clipboard.writeText(url).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const ShareButton = ({ onNav }: { onNav?: () => void }) => (
+    <button
+      onClick={() => { handleCopyAssessmentLink(); onNav?.() }}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors border border-gray-200"
+    >
+      {copied
+        ? <Check className="w-3.5 h-3.5 flex-shrink-0 text-green-500" />
+        : <LinkIcon className="w-3.5 h-3.5 flex-shrink-0" />
+      }
+      {copied ? 'Link copied!' : 'Share Client Assessment'}
+    </button>
+  )
+
   const NavLinks = ({ onNav }: { onNav?: () => void }) => (
     <>
       {NAV.map(({ label, href, icon: Icon }) => (
         <Link
-          key={href}
+          key={label}
           href={href}
           onClick={onNav}
           className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
@@ -94,9 +115,10 @@ export function DashboardShell({ children, userEmail, userName, advisorType, isA
           <NavLinks />
         </nav>
 
-        {/* User + sign out */}
-        <div className="px-3 pb-4 pt-3 border-t border-gray-100 space-y-0.5">
-          <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
+        {/* Share button + User + sign out */}
+        <div className="px-3 pb-4 pt-3 border-t border-gray-100 space-y-1.5">
+          <ShareButton />
+          <div className="flex items-center gap-2.5 px-3 py-2">
             <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
               {initials}
             </div>
@@ -193,9 +215,10 @@ export function DashboardShell({ children, userEmail, userName, advisorType, isA
               <NavLinks onNav={() => setMobileOpen(false)} />
             </nav>
 
-            {/* Drawer user + sign out */}
-            <div className="px-3 pb-6 pt-3 border-t border-gray-100 space-y-0.5">
-              <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
+            {/* Drawer share + user + sign out */}
+            <div className="px-3 pb-6 pt-3 border-t border-gray-100 space-y-1.5">
+              <ShareButton onNav={() => setMobileOpen(false)} />
+              <div className="flex items-center gap-2.5 px-3 py-2">
                 <div className="w-7 h-7 rounded-full bg-brand-600 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
                   {initials}
                 </div>

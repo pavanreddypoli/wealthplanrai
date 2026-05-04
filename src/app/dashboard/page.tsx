@@ -26,7 +26,7 @@ export interface AssessmentRow {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function computePillars(sr: ScoreResults | null) {
+export function computePillars(sr: ScoreResults | null) {
   const s = sr?.sub_scores
   if (!s) return { protect: 0, grow: 0, legacy: 0 }
   return {

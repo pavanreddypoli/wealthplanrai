@@ -22,17 +22,36 @@ const PLAN_DETAILS = {
   starter: {
     name: 'Starter',
     price: '$149/mo',
-    features: ['Up to 25 client profiles', 'Unlimited assessments', 'AI risk scoring', 'PDF report export', 'Email support'],
+    features: [
+      'AI Advisor chat',
+      'Up to 50 client assessments/mo',
+      'Email reports',
+      'Basic dashboard',
+    ],
   },
   professional: {
     name: 'Professional',
     price: '$399/mo',
-    features: ['Everything in Starter', 'Up to 150 client profiles', 'Advisor notes & tagging', 'PDF & CSV export', 'Priority support', 'Custom branding'],
+    features: [
+      'Unlimited client assessments',
+      'AI-powered PDF reports',
+      'Client advisor matching',
+      'Full CRM dashboard',
+      'Priority email support',
+      'Referral program access',
+    ],
   },
   enterprise: {
     name: 'Enterprise',
     price: '$999/mo',
-    features: ['Everything in Professional', 'Unlimited client profiles', 'Multi-advisor management', 'Compliance audit trail', 'SSO & SAML', 'Dedicated account manager', 'SLA guarantee'],
+    features: [
+      'Everything in Professional',
+      'White-label branding',
+      'Dedicated account manager',
+      'Custom integrations',
+      'SLA guarantee',
+      'SSO / Active Directory',
+    ],
   },
 }
 
@@ -40,23 +59,30 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
   const [portalLoading, setPortalLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const plan = profile?.plan ?? 'free'
-  const status = profile?.subscription_status ?? null
-  const planDetails = PLAN_DETAILS[plan as keyof typeof PLAN_DETAILS] ?? PLAN_DETAILS.free
-  const trialEnds = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null
+  const plan       = profile?.plan ?? 'free'
+  const status     = profile?.subscription_status ?? null
   const isTrialing = status === 'trialing'
-  const isActive = status === 'active'
+  const isActive   = status === 'active'
   const isCanceled = status === 'canceled'
-  const isPastDue = status === 'past_due'
-  const hasStripe = !!profile?.stripe_customer_id
+  const isPastDue  = status === 'past_due'
+  const hasStripe  = !!profile?.stripe_customer_id
+
+  const planDetails = PLAN_DETAILS[plan as keyof typeof PLAN_DETAILS] ?? PLAN_DETAILS.free
+
+  // Fallback: if trialing but trial_ends_at not set, assume 14 days from today
+  const trialEnds = profile?.trial_ends_at
+    ? new Date(profile.trial_ends_at)
+    : isTrialing ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) : null
 
   const daysLeft = trialEnds
     ? Math.max(0, Math.ceil((trialEnds.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0
 
+  // DB stores 'advisor' / 'planner', not the display labels
   const advisorTypeLabel =
-    profile?.advisor_type === 'Financial Advisor' ? 'Financial Advisor'
-    : profile?.advisor_type === 'Financial Planner' ? 'Financial Planner'
+    profile?.advisor_type === 'advisor'  ? 'Financial Advisor'
+    : profile?.advisor_type === 'planner' ? 'Financial Planner'
+    : plan !== 'free'                     ? 'Advisor Account'
     : 'Free Account'
 
   async function openBillingPortal() {
@@ -81,7 +107,6 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
 
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Sora,sans-serif' }}>
           Billing &amp; Subscription
@@ -116,7 +141,13 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
                 <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-semibold text-amber-800">Trial active</p>
-                  <p className="text-xs text-amber-600">{daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining</p>
+                  <p className="text-xs text-amber-600">
+                    {daysLeft > 0
+                      ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`
+                      : trialEnds
+                        ? `Ends ${trialEnds.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : '14-day trial'}
+                  </p>
                 </div>
               </div>
             )}
@@ -160,8 +191,8 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
           </div>
         </div>
 
-        {/* Trial urgency warning */}
-        {isTrialing && daysLeft <= 3 && (
+        {/* Trial urgency — only show when <= 3 days left */}
+        {isTrialing && daysLeft <= 3 && daysLeft >= 0 && (
           <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
             <p className="text-xs text-amber-800 font-medium">
               ⚠ Your trial ends in {daysLeft} day{daysLeft !== 1 ? 's' : ''}.
@@ -170,7 +201,6 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
           </div>
         )}
 
-        {/* Past due warning */}
         {isPastDue && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3">
             <p className="text-xs text-red-800 font-medium">
@@ -195,10 +225,10 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
           <div className="flex justify-between py-2.5 text-sm">
             <span className="text-gray-500">Billing status</span>
             <span className={`font-medium capitalize ${
-              isActive ? 'text-green-600'
-                : isPastDue ? 'text-red-600'
-                : isTrialing ? 'text-amber-600'
-                : 'text-gray-600'
+              isActive   ? 'text-green-600'
+              : isPastDue  ? 'text-red-600'
+              : isTrialing ? 'text-amber-600'
+              : 'text-gray-600'
             }`}>
               {status ?? 'Not subscribed'}
             </span>
@@ -206,8 +236,28 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
         </div>
       </div>
 
-      {/* Free plan upgrade illustration */}
-      {plan === 'free' && (
+      {/* Trialing without Stripe — prompt to add payment method */}
+      {isTrialing && !hasStripe && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center mb-4">
+          <p className="text-sm font-semibold text-blue-900 mb-1">
+            🎉 Your 14-day trial is active!
+          </p>
+          <p className="text-xs text-blue-700 mb-4">
+            Add a payment method to continue after your trial ends.
+            You will not be charged until your trial expires.
+          </p>
+          <a
+            href="/pricing"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            Add Payment Method →
+          </a>
+          <p className="text-xs text-gray-400 mt-3">No charge until trial ends · Cancel anytime</p>
+        </div>
+      )}
+
+      {/* Free plan (not trialing) upgrade illustration */}
+      {plan === 'free' && !isTrialing && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4 text-center">
           <svg width="100" height="80" viewBox="0 0 100 80" className="mx-auto mb-3">
             <circle cx="50" cy="35" r="30" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="1.5"/>
@@ -249,13 +299,12 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 rounded-2xl shadow-sm transition-all text-sm font-semibold text-white"
           >
             <Zap className="w-5 h-5" />
-            {plan === 'free' ? 'Start Free Trial' : 'Upgrade Plan'}
+            {plan === 'free' && !isTrialing ? 'Start Free Trial' : 'Upgrade Plan'}
             <ArrowRight className="w-4 h-4" />
           </Link>
         )}
       </div>
 
-      {/* Cancel hint */}
       {(isActive || isTrialing) && hasStripe && (
         <p className="text-xs text-gray-400 text-center mt-4">
           To cancel your subscription, go to{' '}

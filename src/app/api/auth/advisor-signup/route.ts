@@ -136,7 +136,8 @@ export async function POST(req: NextRequest) {
     // Wait for handle_new_user trigger to create profiles row
     await new Promise(r => setTimeout(r, 500))
 
-    // Update profiles row with advisor info
+    // Update profiles row with advisor info and trial
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     const { error: profileError } = await admin
       .from('profiles')
       .update({
@@ -147,6 +148,9 @@ export async function POST(req: NextRequest) {
         bio:                  bio || null,
         years_experience:     years_experience || null,
         is_accepting_clients: is_accepting_clients ?? true,
+        plan:                 'professional',
+        subscription_status:  'trialing',
+        trial_ends_at:        trialEndsAt,
       })
       .eq('id', data.user.id)
 
@@ -165,14 +169,10 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Email confirmation is OFF — attempt auto signin
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
-    console.log('Auto signin after signup:', signInData?.user?.id, signInError?.message)
-
     return NextResponse.json({
-      success:     true,
-      autoSignedIn: true,
-      userId:      data.user.id,
+      success:          true,
+      requiresCheckout: true,
+      message:          'Account created! Complete your plan selection to activate your trial.',
     })
 
   } catch (err) {

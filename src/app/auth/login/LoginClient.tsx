@@ -392,6 +392,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
         message?: string
         requiresConfirmation?: boolean
         autoSignedIn?: boolean
+        requiresCheckout?: boolean
         upgraded?: boolean
         canUpgrade?: boolean
         existingType?: string
@@ -425,7 +426,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
         return
       }
 
-      if (data.autoSignedIn) {
+      if (data.requiresCheckout || data.autoSignedIn) {
         const supabase = createClient()
         const { error: clientErr } = await supabase.auth.signInWithPassword({
           email:    form.email,
@@ -446,7 +447,7 @@ function AdvisorSignup({ onBack, onConfirmationRequired, onAutoSignedIn, onUpgra
             // non-fatal
           }
         }
-        await onAutoSignedIn()
+        window.location.href = `/pricing?newAdvisor=true&plan=${selectedPlan || 'professional'}`
         return
       }
 

@@ -84,6 +84,9 @@ export async function POST(request: NextRequest) {
         referred_by_code: discountCode.code,
         discount_applied_percentage: discountCode.discount_type === 'percentage' ? discountCode.discount_value : null,
         actual_monthly_payment: discountedPrice,
+        plan: plan || 'professional',
+        subscription_status: 'trialing',
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       })
       .eq('id', user.id)
 

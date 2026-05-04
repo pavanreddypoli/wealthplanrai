@@ -82,6 +82,9 @@ interface Props {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function AdminClient({ initialCodes, initialReferrals, initialCommissions, advisors }: Props) {
+  console.log('[AdminClient] initialCodes received:', initialCodes?.length)
+  console.log('[AdminClient] first code:', initialCodes?.[0]?.code)
+
   const [tab, setTab] = useState<Tab>('codes')
   const [codes, setCodes] = useState<DiscountCode[]>(initialCodes)
   const [referrals] = useState<Referral[]>(initialReferrals)
@@ -118,6 +121,13 @@ export function AdminClient({ initialCodes, initialReferrals, initialCommissions
 
   return (
     <div>
+      {/* DEBUG BANNER — remove after confirming data flow */}
+      <div style={{ background: 'red', color: 'white', padding: '16px', margin: '16px', fontFamily: 'monospace', fontSize: '13px', borderRadius: '8px' }}>
+        DEBUG: initialCodes.length = {initialCodes?.length ?? 'undefined'}
+        {' | '}codes state.length = {codes?.length ?? 'undefined'}
+        {' | '}First code = {initialCodes?.[0]?.code ?? 'none'}
+      </div>
+
       {/* Sticky page header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 h-14 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">

@@ -31,24 +31,25 @@ export default async function AdminPage() {
 
   const { data: codes, error: codesError } = await serviceClient
     .from('discount_codes')
-    .select('*, referrer:referrer_id(id, full_name, email)')
+    .select('*')
     .order('created_at', { ascending: false })
 
-  console.log('[admin page] codes fetched:', codes?.length, codesError?.message)
+  console.log('[admin page] codes fetched:', codes?.length, 'error:', codesError?.message)
+  console.log('[admin page] codes to pass:', codes?.length, codes?.[0]?.code)
 
   const { data: referrals, error: referralsError } = await serviceClient
     .from('referrals')
-    .select('*, referrer:referrer_id(id, full_name, email), referred:referred_id(id, full_name, email), commissions:commission_payments(*)')
+    .select('*')
     .order('created_at', { ascending: false })
 
-  console.log('[admin page] referrals fetched:', referrals?.length, referralsError?.message)
+  console.log('[admin page] referrals fetched:', referrals?.length, 'error:', referralsError?.message)
 
   const { data: commissions, error: commissionsError } = await serviceClient
     .from('commission_payments')
-    .select('*, referral:referral_id(discount_code, plan, referred:referred_id(full_name, email)), referrer:referrer_id(full_name, email)')
+    .select('*')
     .order('created_at', { ascending: false })
 
-  console.log('[admin page] commissions fetched:', commissions?.length, commissionsError?.message)
+  console.log('[admin page] commissions fetched:', commissions?.length, 'error:', commissionsError?.message)
 
   const { data: advisors } = await serviceClient
     .from('profiles')

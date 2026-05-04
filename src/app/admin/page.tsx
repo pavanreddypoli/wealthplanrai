@@ -35,7 +35,6 @@ export default async function AdminPage() {
     .order('created_at', { ascending: false })
 
   console.log('[admin page] codes fetched:', codes?.length, 'error:', codesError?.message)
-  console.log('[admin page] codes to pass:', codes?.length, codes?.[0]?.code)
 
   const { data: referrals, error: referralsError } = await serviceClient
     .from('referrals')

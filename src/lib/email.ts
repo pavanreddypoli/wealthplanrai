@@ -12,7 +12,7 @@ function getSgMail() {
   const key = process.env.SENDGRID_API_KEY
   if (!key || key === 'placeholder') throw new Error('SENDGRID_API_KEY not configured')
   console.log('[sendgrid] API key present, length:', key.length)
-  console.log('[sendgrid] From email:', process.env.SENDGRID_FROM_EMAIL ?? 'info@redcubefinancial.com (default)')
+  console.log('[sendgrid] From email:', process.env.SENDGRID_FROM_EMAIL ?? 'info@wealthplanrai.com (default)')
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const sgMail = require('@sendgrid/mail')
   sgMail.setApiKey(key)
@@ -22,7 +22,7 @@ function getSgMail() {
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 function from(): { email: string; name: string } {
-  return { email: process.env.SENDGRID_FROM_EMAIL ?? 'info@redcubefinancial.com', name: 'WealthPlanrAI' }
+  return { email: process.env.SENDGRID_FROM_EMAIL ?? 'info@wealthplanrai.com', name: 'WealthPlanrAI' }
 }
 
 function appUrl(): string {
@@ -171,7 +171,7 @@ export async function sendClientEmail(
 
     <div style="border-top:1px solid #e5e7eb;margin-top:24px;padding-top:18px;">
       <p style="margin:0;font-size:13px;color:#374151;font-weight:600;">The WealthPlanrAI Team</p>
-      <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">info@redcubefinancial.com</p>
+      <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">info@wealthplanrai.com</p>
     </div>
   </div>
   ${emailFooter(CLIENT_DISCLAIMER)}
@@ -209,7 +209,7 @@ export async function sendInfoEmail(
   const sgMail  = getSgMail()
   const date    = dateStr()
   const safe    = safeFilename(clientName)
-  const infoTo  = process.env.COMPANY_EMAIL ?? 'info@redcubefinancial.com'
+  const infoTo  = process.env.COMPANY_EMAIL ?? 'info@wealthplanrai.com'
 
   const gapItems = topGaps.slice(0, 3).map(g => `<li style="padding:4px 0;font-size:13px;color:#374151;">${g}</li>`).join('')
 

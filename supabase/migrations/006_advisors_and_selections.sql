@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 006
+-- WealthPlanrAI — Migration 006
 -- Adds advisor profile fields and assessment advisor selection
 
 -- ─── profiles: advisor columns ───────────────────────────────────────────────

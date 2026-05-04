@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     // EMAIL 2 — Company notification (multi-recipient to survive RBL blocks)
     const EMAIL_VALID = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     const companyEmails = [
-      process.env.COMPANY_EMAIL || 'info@redcubefinancial.com',
+      process.env.COMPANY_EMAIL || 'info@wealthplanrai.com',
       process.env.COMPANY_BACKUP_EMAIL,
     ].filter((e): e is string => !!e && EMAIL_VALID.test(e))
 

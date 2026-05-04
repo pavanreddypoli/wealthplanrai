@@ -115,7 +115,7 @@ export async function PATCH(
               { topGaps: gaps },
             ),
             sendAdvisorEmail(
-              process.env.COMPANY_EMAIL ?? 'info@redcubefinancial.com',
+              process.env.COMPANY_EMAIL ?? 'info@wealthplanrai.com',
               'WealthPlanrAI',
               name,
               email,

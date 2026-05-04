@@ -317,7 +317,7 @@ export function BillingClient({ profile, userEmail }: { profile: Profile | null;
 
       <p className="text-xs text-gray-400 text-center mt-3">
         Need help?{' '}
-        <a href="mailto:info@redcubefinancial.com" className="text-brand-600 hover:underline">
+        <a href="mailto:info@wealthplanrai.com" className="text-brand-600 hover:underline">
           Contact support
         </a>
       </p>

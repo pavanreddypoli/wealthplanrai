@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 009
+-- WealthPlanrAI — Migration 009
 -- Adds RLS policies to assessments so advisors only see their own clients and unassigned leads
 
 ALTER TABLE assessments ENABLE ROW LEVEL SECURITY;

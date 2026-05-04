@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 007
+-- WealthPlanrAI — Migration 007
 -- Adds phone, bio, and ensures is_accepting_clients exists on profiles
 
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone               text;

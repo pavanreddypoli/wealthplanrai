@@ -1,4 +1,4 @@
--- RedCube WealthOS — Initial Schema
+-- WealthPlanrAI — Initial Schema
 -- Run this in your Supabase SQL editor or via supabase db push
 
 create extension if not exists "uuid-ossp";

@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 003
+-- WealthPlanrAI — Migration 003
 -- Adds: assessment_answers, advisor_notes tables
 -- Also patches assessments with columns the app expects but migration 001 omitted
 

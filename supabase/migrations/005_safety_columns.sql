@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 005
+-- WealthPlanrAI — Migration 005
 -- Safety: ensure all expected columns on assessments exist (idempotent)
 
 alter table assessments

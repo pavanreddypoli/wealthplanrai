@@ -144,8 +144,8 @@ export default function ConfirmPage() {
             </a>
             <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: '16px' }}>
               Need help? Contact{' '}
-              <a href="mailto:info@redcubefinancial.com" style={{ color: '#2563EB', textDecoration: 'none' }}>
-                info@redcubefinancial.com
+              <a href="mailto:info@wealthplanrai.com" style={{ color: '#2563EB', textDecoration: 'none' }}>
+                info@wealthplanrai.com
               </a>
             </p>
           </>

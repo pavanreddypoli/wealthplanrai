@@ -830,7 +830,7 @@ function ConfirmationPending({ email, onSignIn }: { email: string; onSignIn: () 
 
         <p className="text-xs text-gray-400 leading-relaxed">
           Didn&apos;t receive it? Check your spam folder or contact us at{' '}
-          <a href="mailto:info@redcubefinancial.com" className="text-brand-600 hover:underline">
+          <a href="mailto:info@wealthplanrai.com" className="text-brand-600 hover:underline">
             support@wealthplanrai.com
           </a>
         </p>

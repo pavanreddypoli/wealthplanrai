@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { scoreAssessment } from '@/lib/scoring'
+import { analyzeIntake } from '@/lib/wealthplanr/intake-analysis-engine'
+import { translateForClient } from '@/lib/wealthplanr/client-view-translator'
+import { flatAnswersToProfile } from '@/lib/wealthplanr/adapter'
 
 // ─── Risk scoring (investment profile) ───────────────────────────────────────
 
@@ -195,6 +198,17 @@ export async function POST(request: NextRequest) {
     const recommended_allocation = getAllocation(risk_profile)
     const score_results = scoreAssessment(answers)
 
+    // New v2 engine — runs alongside legacy scoring; output stored separately
+    let intake_analysis = null
+    let client_summary = null
+    try {
+      const profile = flatAnswersToProfile(answers)
+      intake_analysis = analyzeIntake(profile)
+      client_summary = translateForClient(intake_analysis)
+    } catch (engineErr) {
+      console.error('[assessment] v2 engine error (non-fatal):', engineErr)
+    }
+
     const fullName = [answers.firstName, answers.lastName].filter(Boolean).join(' ') || null
 
     // 1. Insert parent assessment row
@@ -209,6 +223,8 @@ export async function POST(request: NextRequest) {
         risk_profile,
         recommended_allocation,
         score_results,
+        intake_analysis,
+        client_summary,
         status:                 'submitted',
       })
       .select('id')

@@ -1,4 +1,4 @@
--- RedCube WealthOS — Migration 004
+-- WealthPlanrAI — Migration 004
 -- Adds Stripe billing fields to profiles table
 
 alter table profiles

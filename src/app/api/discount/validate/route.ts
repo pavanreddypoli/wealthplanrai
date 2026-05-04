@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
 const PLAN_PRICES: Record<string, number> = {
@@ -9,34 +9,62 @@ const PLAN_PRICES: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, plan } = await request.json() as { code: string; plan: string }
+    const { code, plan } = await request.json()
 
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 })
     }
 
-    const serviceClient = createClient(
+    console.log('[validate] checking code:', code, 'for plan:', plan)
+
+    // Use service role to bypass RLS — validation must work for unauthenticated users
+    const serviceClient = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
     const { data: discountCode, error } = await serviceClient
       .from('discount_codes')
-      .select('*, referrer:referrer_id(full_name, email)')
+      .select('*')
       .eq('is_active', true)
       .ilike('code', code.trim())
-      .single()
+      .maybeSingle()
 
-    if (error || !discountCode) {
-      return NextResponse.json({ valid: false, error: 'This code is not valid or has expired' })
+    console.log('[validate] query result:', discountCode?.code, 'error:', error?.message)
+
+    if (error) {
+      console.error('[validate] database error:', error.message)
+      return NextResponse.json({ valid: false, error: 'Database error' })
     }
 
-    if (discountCode.expires_at && new Date(discountCode.expires_at) < new Date()) {
-      return NextResponse.json({ valid: false, error: 'This discount code has expired' })
+    if (!discountCode) {
+      console.log('[validate] code not found:', code)
+      return NextResponse.json({
+        valid: false,
+        error: 'This code is not valid or has expired',
+      })
     }
 
+    // Check expiry — use end-of-day to avoid timezone edge cases
+    if (discountCode.expires_at) {
+      const expiryDate = new Date(discountCode.expires_at)
+      expiryDate.setHours(23, 59, 59, 999)
+      if (expiryDate < new Date()) {
+        console.log('[validate] code expired:', code)
+        return NextResponse.json({
+          valid: false,
+          error: 'This discount code has expired',
+        })
+      }
+    }
+
+    // Check max uses
     if (discountCode.max_uses && discountCode.current_uses >= discountCode.max_uses) {
-      return NextResponse.json({ valid: false, error: 'This discount code has reached its maximum uses' })
+      console.log('[validate] code max uses reached:', code)
+      return NextResponse.json({
+        valid: false,
+        error: 'This discount code has reached its maximum uses',
+      })
     }
 
     const fullPrice = PLAN_PRICES[plan] ?? PLAN_PRICES.professional
@@ -51,7 +79,7 @@ export async function POST(request: NextRequest) {
       discountedPrice = fullPrice - discountAmount
     }
 
-    const referrerData = discountCode.referrer as { full_name?: string; email?: string } | null
+    console.log('[validate] code valid! discount:', discountAmount, 'final price:', discountedPrice)
 
     return NextResponse.json({
       valid: true,
@@ -60,13 +88,16 @@ export async function POST(request: NextRequest) {
       discount_value: discountCode.discount_value,
       discount_amount: discountAmount,
       full_price: fullPrice,
-      discounted_price: discountedPrice,
-      referrer_name: referrerData?.full_name ?? null,
+      discounted_price: Math.max(0, discountedPrice),
+      referrer_name: null,
       description: discountCode.description,
     })
 
   } catch (e: any) {
-    console.error('[discount/validate] error:', e.message)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    console.error('[validate] error:', e.message)
+    return NextResponse.json({
+      valid: false,
+      error: 'Could not validate code. Please try again.',
+    }, { status: 500 })
   }
 }

@@ -21,15 +21,30 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     )
 
-    const { data: discountCode } = await serviceClient
+    const { data: discountCode, error: codeError } = await serviceClient
       .from('discount_codes')
       .select('*')
       .eq('is_active', true)
       .ilike('code', code.trim())
-      .single()
+      .maybeSingle()
+
+    console.log('[apply] code lookup:', discountCode?.code, 'error:', codeError?.message)
+
+    if (codeError) {
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
 
     if (!discountCode) {
       return NextResponse.json({ error: 'Code not found' }, { status: 404 })
+    }
+
+    // Check expiry — end-of-day to avoid timezone edge cases
+    if (discountCode.expires_at) {
+      const expiryDate = new Date(discountCode.expires_at)
+      expiryDate.setHours(23, 59, 59, 999)
+      if (expiryDate < new Date()) {
+        return NextResponse.json({ error: 'This discount code has expired' }, { status: 400 })
+      }
     }
 
     const fullPrice = PLAN_PRICES[plan] ?? PLAN_PRICES.professional
